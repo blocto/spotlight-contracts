@@ -12,10 +12,7 @@ contract SpotlightTokenFaucet is Ownable, ERC20, ISpotlightFaucet {
     uint256 private _faucetClaimAmount = 1_000e18;
     mapping(address => uint256) private _lastClaimTime;
 
-    constructor(
-        string memory name_,
-        string memory symbol_
-    ) ERC20(name_, symbol_) Ownable(msg.sender) {}
+    constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) Ownable(msg.sender) {}
 
     modifier onlyFaucetActive() {
         _checkIsFaucetActive();
@@ -89,9 +86,7 @@ contract SpotlightTokenFaucet is Ownable, ERC20, ISpotlightFaucet {
      * @notice return 0 if the wait time is not active
      * @notice owner don't have to wait
      */
-    function secondsUntilNextClaim(
-        address account
-    ) public view returns (uint256) {
+    function secondsUntilNextClaim(address account) public view returns (uint256) {
         if (!isWaitTimeActive()) {
             return 0;
         }
@@ -104,9 +99,7 @@ contract SpotlightTokenFaucet is Ownable, ERC20, ISpotlightFaucet {
             return 0;
         }
 
-        uint256 remainingTime = lastClaimTimestamp(account) +
-            _waitTime -
-            block.timestamp;
+        uint256 remainingTime = lastClaimTimestamp(account) + _waitTime - block.timestamp;
         return remainingTime <= 0 ? 0 : remainingTime;
     }
 
@@ -128,10 +121,7 @@ contract SpotlightTokenFaucet is Ownable, ERC20, ISpotlightFaucet {
      * @dev Emits a {Transfer} event with `from` set to the zero address.
      * @notice onlyOwner
      */
-    function distributeToken(
-        address account,
-        uint256 value
-    ) external override onlyOwner {
+    function distributeToken(address account, uint256 value) external override onlyOwner {
         _mint(account, value);
     }
 

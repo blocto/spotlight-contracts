@@ -100,23 +100,15 @@ contract SpotlightTokenFaucetTest is Test {
         address recipient = makeAddr("recipient");
         uint256 balanceBefore = _sUSDC.balanceOf(recipient);
         uint256 lastClaimTimestampBefore = _sUSDC.lastClaimTimestamp(recipient);
-        uint256 secondsUintilNextClaimBefore = _sUSDC.secondsUntilNextClaim(
-            recipient
-        );
+        uint256 secondsUintilNextClaimBefore = _sUSDC.secondsUntilNextClaim(recipient);
 
         vm.startPrank(_owner);
         _sUSDC.distributeToken(recipient, 1_000e18);
         vm.startPrank(_owner);
 
         assertEq(_sUSDC.balanceOf(recipient), balanceBefore + 1_000e18);
-        assertEq(
-            _sUSDC.lastClaimTimestamp(recipient),
-            lastClaimTimestampBefore
-        );
-        assertEq(
-            _sUSDC.secondsUntilNextClaim(recipient),
-            secondsUintilNextClaimBefore
-        );
+        assertEq(_sUSDC.lastClaimTimestamp(recipient), lastClaimTimestampBefore);
+        assertEq(_sUSDC.secondsUntilNextClaim(recipient), secondsUintilNextClaimBefore);
     }
 
     function testClaim() public {
@@ -127,10 +119,7 @@ contract SpotlightTokenFaucetTest is Test {
         _sUSDC.claimToken();
         vm.stopPrank();
 
-        assertEq(
-            _sUSDC.balanceOf(claimer),
-            balanceBefore + _sUSDC.faucetClaimAmount()
-        );
+        assertEq(_sUSDC.balanceOf(claimer), balanceBefore + _sUSDC.faucetClaimAmount());
         assertEq(_sUSDC.lastClaimTimestamp(claimer), block.timestamp);
         assertEq(_sUSDC.secondsUntilNextClaim(claimer), 1 days);
 
@@ -139,10 +128,7 @@ contract SpotlightTokenFaucetTest is Test {
         vm.startPrank(claimer);
         _sUSDC.claimToken();
         vm.stopPrank();
-        assertEq(
-            _sUSDC.balanceOf(claimer),
-            balanceBefore + 2 * _sUSDC.faucetClaimAmount()
-        );
+        assertEq(_sUSDC.balanceOf(claimer), balanceBefore + 2 * _sUSDC.faucetClaimAmount());
     }
 
     function testClaimWhenFaucetTurnnedOff() public {

@@ -40,16 +40,12 @@ interface ISpotlightFaucet {
     /**
      * @dev Returns the timestamp of the last claim for an account.
      */
-    function lastClaimTimestamp(
-        address account
-    ) external view returns (uint256);
+    function lastClaimTimestamp(address account) external view returns (uint256);
 
     /**
      * @dev Returns the number of seconds until the next claim for an account.
      */
-    function secondsUntilNextClaim(
-        address account
-    ) external view returns (uint256);
+    function secondsUntilNextClaim(address account) external view returns (uint256);
 
     /**
      * @dev Claims tokens from the faucet.
