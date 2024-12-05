@@ -25,7 +25,7 @@ interface ISpotlightFaucet {
     /**
      * @dev Sets whether the wait time is active.
      */
-    function setIsWaitTimeActive(bool active) external;
+    function setWaitTimeActive(bool active) external;
 
     /**
      * @dev Returns the wait time in seconds.

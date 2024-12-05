@@ -6,32 +6,20 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract SpotlightTokenFaucet is Ownable, ERC20, ISpotlightFaucet {
-    uint8 private immutable _decimals;
-
     bool private _isFaucetActive = true;
     bool private _isWaitTimeActive = true;
     uint256 private _waitTime = 1 days;
-    uint256 private _faucetClaimAmount = 1_000 * (10 ** _decimals);
+    uint256 private _faucetClaimAmount = 1_000e18;
     mapping(address => uint256) private _lastClaimTime;
 
     constructor(
         string memory name_,
-        string memory symbol_,
-        uint8 decimals_
-    ) ERC20(name_, symbol_) Ownable(msg.sender) {
-        _decimals = decimals_;
-    }
+        string memory symbol_
+    ) ERC20(name_, symbol_) Ownable(msg.sender) {}
 
     modifier onlyFaucetActive() {
         _checkIsFaucetActive();
         _;
-    }
-
-    /**
-     * @dev See {ERC20-decimals}.
-     */
-    function decimals() public view override returns (uint8) {
-        return _decimals;
     }
 
     /**
@@ -85,7 +73,7 @@ contract SpotlightTokenFaucet is Ownable, ERC20, ISpotlightFaucet {
      * @dev See {ISpotlightFaucet-setIsWaitTimeActive}.
      * @notice onlyOwner
      */
-    function setIsWaitTimeActive(bool active) external onlyOwner {
+    function setWaitTimeActive(bool active) external onlyOwner {
         _isWaitTimeActive = active;
     }
 
@@ -109,6 +97,10 @@ contract SpotlightTokenFaucet is Ownable, ERC20, ISpotlightFaucet {
         }
 
         if (account == owner()) {
+            return 0;
+        }
+
+        if (lastClaimTimestamp(account) == 0) {
             return 0;
         }
 
