@@ -65,6 +65,13 @@ contract SpotlightTokenFaucetTest is Test {
         _faucet.setFaucetClaimAmount(2_000e18);
     }
 
+    function testSetFaucetClaimAmount() public {
+        vm.startPrank(_faucetOwner);
+        _faucet.setFaucetClaimAmount(2_000e18);
+        vm.stopPrank();
+        assertEq(_faucet.faucetClaimAmount(), 2_000e18);
+    }
+
     function testOwnerSetFaucetActive() public {
         vm.startPrank(_faucetOwner);
         _faucet.setFaucetActive(false);
