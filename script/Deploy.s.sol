@@ -10,15 +10,17 @@ contract Deploy is Script {
      * @dev Odyssey rpc: https://odyssey.storyrpc.io
      */
 
-    /* Deploy with the following command:
+    /* Deploy and verify with the following command:
         forge script script/Deploy.s.sol:Deploy  --broadcast \
         --chain-id 1516 \
         --rpc-url https://odyssey.storyrpc.io \
+        --verify \
+        --verifier blockscout \
+        --verifier-url 'https://odyssey.storyscan.xyz/api/' 
     */
 
     //@notice The address of the SUSDCToken contract on Odyssey.(https://odyssey.storyscan.xyz/address/0x40fCa9cB1AB15eD9B5bDA19A52ac00A78AE08e1D?tab=contract)
-    address private _SUSDCTokenAddr =
-        0x40fCa9cB1AB15eD9B5bDA19A52ac00A78AE08e1D;
+    address private _SUSDCTokenAddr = 0x40fCa9cB1AB15eD9B5bDA19A52ac00A78AE08e1D;
 
     function run() public {
         vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
