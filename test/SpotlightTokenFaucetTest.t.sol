@@ -2,90 +2,112 @@
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
-import {SpotlightUSDCFaucet} from "../src/spotlight-token-faucet/SpotlightUSDCFaucet.sol";
 import {SpotlightTokenFaucet} from "../src/spotlight-token-faucet/SpotlightTokenFaucet.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+contract SampleToken is ERC20 {
+    constructor() ERC20("Sample Token", "SMT") {
+        _mint(msg.sender, 1_000_000e18);
+    }
+}
 
 contract SpotlightTokenFaucetTest is Test {
-    address private _owner;
-    address private _sUSDCAddr;
-    SpotlightTokenFaucet private _sUSDC;
+    error OwnableUnauthorizedAccount(address account);
+
+    address private _sampleTokenOwner;
+    address private _sampleTokenAddr;
+    ERC20 private _sampleToken;
+
+    address private _faucetOwner;
+    address private _faucetAddr;
+    SpotlightTokenFaucet private _faucet;
 
     function setUp() public {
-        _owner = makeAddr("owner");
+        _sampleTokenOwner = makeAddr("sampleTokenOwner");
+        vm.startPrank(_sampleTokenOwner);
+        _sampleToken = new SampleToken();
+        _sampleTokenAddr = address(_sampleToken);
+        vm.stopPrank();
 
-        vm.startPrank(_owner);
-        _sUSDC = new SpotlightUSDCFaucet();
-        _sUSDCAddr = address(_sUSDC);
+        _faucetOwner = makeAddr("owner");
+        vm.startPrank(_faucetOwner);
+        _faucet = new SpotlightTokenFaucet(_sampleTokenAddr);
+        _faucetAddr = address(_faucet);
+        vm.stopPrank();
+
+        vm.startPrank(_sampleTokenOwner);
+        _sampleToken.transfer(_faucetAddr, 2_000e18);
         vm.stopPrank();
     }
 
     function testSpotlightTokenFaucetConstructor() public view {
-        assertEq(_sUSDC.owner(), _owner);
-        assertEq(_sUSDC.name(), "Spotlight USDC");
-        assertEq(_sUSDC.symbol(), "SUSDC");
-        assertEq(_sUSDC.faucetClaimAmount(), 1_000e18);
-        assertEq(_sUSDC.isFaucetActive(), true);
-        assertEq(_sUSDC.isWaitTimeActive(), true);
-        assertEq(_sUSDC.waitTime(), 1 days);
+        assertEq(_faucet.owner(), _faucetOwner);
+        assertEq(_faucet.tokenAddress(), _sampleTokenAddr);
+        assertEq(_faucet.faucetClaimAmount(), 1_000e18);
+        assertEq(_faucet.isFaucetActive(), true);
+        assertEq(_faucet.isWaitTimeActive(), true);
+        assertEq(_faucet.waitTime(), 1 days);
+
+        assertEq(_sampleToken.balanceOf(_faucetAddr), 2_000e18);
     }
 
     function testNotOwnerSetFaucetActive() public {
         address notOwner = makeAddr("notOwner");
         vm.startPrank(notOwner);
         vm.expectRevert();
-        _sUSDC.setFaucetActive(false);
+        _faucet.setFaucetActive(false);
     }
 
     function testOwnerSetFaucetActive() public {
-        vm.startPrank(_owner);
-        _sUSDC.setFaucetActive(false);
-        vm.startPrank(_owner);
-        assertEq(_sUSDC.isFaucetActive(), false);
+        vm.startPrank(_faucetOwner);
+        _faucet.setFaucetActive(false);
+        vm.startPrank(_faucetOwner);
+        assertEq(_faucet.isFaucetActive(), false);
 
-        vm.startPrank(_owner);
-        _sUSDC.setFaucetActive(true);
-        vm.startPrank(_owner);
-        assertEq(_sUSDC.isFaucetActive(), true);
+        vm.startPrank(_faucetOwner);
+        _faucet.setFaucetActive(true);
+        vm.startPrank(_faucetOwner);
+        assertEq(_faucet.isFaucetActive(), true);
     }
 
     function testClaimWhenFaucetInactive() public {
-        vm.startPrank(_owner);
-        _sUSDC.setFaucetActive(false);
+        vm.startPrank(_faucetOwner);
+        _faucet.setFaucetActive(false);
         vm.expectRevert("SpotlightTokenFaucet: faucet is not active");
-        _sUSDC.claimToken();
+        _faucet.claimToken();
     }
 
     function testNotOwnerSetWaitTimeActive() public {
         address notOwner = makeAddr("notOwner");
         vm.startPrank(notOwner);
         vm.expectRevert();
-        _sUSDC.setWaitTimeActive(false);
+        _faucet.setWaitTimeActive(false);
     }
 
     function testOwnerSetWaitTimeActive() public {
-        vm.startPrank(_owner);
-        _sUSDC.setWaitTimeActive(false);
-        vm.startPrank(_owner);
-        assertEq(_sUSDC.isWaitTimeActive(), false);
+        vm.startPrank(_faucetOwner);
+        _faucet.setWaitTimeActive(false);
+        vm.startPrank(_faucetOwner);
+        assertEq(_faucet.isWaitTimeActive(), false);
 
-        vm.startPrank(_owner);
-        _sUSDC.setWaitTimeActive(true);
-        vm.startPrank(_owner);
-        assertEq(_sUSDC.isWaitTimeActive(), true);
+        vm.startPrank(_faucetOwner);
+        _faucet.setWaitTimeActive(true);
+        vm.startPrank(_faucetOwner);
+        assertEq(_faucet.isWaitTimeActive(), true);
     }
 
     function testNotOwnerSetWaitTime() public {
         address notOwner = makeAddr("notOwner");
         vm.startPrank(notOwner);
         vm.expectRevert();
-        _sUSDC.setWaitTime(10 minutes);
+        _faucet.setWaitTime(10 minutes);
     }
 
     function testOwnerSetWaitTime() public {
-        vm.startPrank(_owner);
-        _sUSDC.setWaitTime(10 minutes);
-        vm.startPrank(_owner);
-        assertEq(_sUSDC.waitTime(), 10 minutes);
+        vm.startPrank(_faucetOwner);
+        _faucet.setWaitTime(10 minutes);
+        vm.startPrank(_faucetOwner);
+        assertEq(_faucet.waitTime(), 10 minutes);
     }
 
     function testNotOwnerDistrubuteToken() public {
@@ -93,84 +115,93 @@ contract SpotlightTokenFaucetTest is Test {
         address recipient = makeAddr("recipient");
         vm.startPrank(notOwner);
         vm.expectRevert();
-        _sUSDC.distributeToken(recipient, 1_000e18);
+        _faucet.distributeToken(recipient, 1_000e18);
     }
 
     function testOwnerDistributeToken() public {
         address recipient = makeAddr("recipient");
-        uint256 balanceBefore = _sUSDC.balanceOf(recipient);
-        uint256 lastClaimTimestampBefore = _sUSDC.lastClaimTimestamp(recipient);
-        uint256 secondsUintilNextClaimBefore = _sUSDC.secondsUntilNextClaim(recipient);
+        uint256 balanceBefore = _sampleToken.balanceOf(recipient);
+        uint256 lastClaimTimestampBefore = _faucet.lastClaimTimestamp(recipient);
+        uint256 secondsUintilNextClaimBefore = _faucet.secondsUntilNextClaim(recipient);
 
-        vm.startPrank(_owner);
-        _sUSDC.distributeToken(recipient, 1_000e18);
-        vm.startPrank(_owner);
+        vm.startPrank(_faucetOwner);
+        _faucet.distributeToken(recipient, 1_000e18);
+        vm.startPrank(_faucetOwner);
 
-        assertEq(_sUSDC.balanceOf(recipient), balanceBefore + 1_000e18);
-        assertEq(_sUSDC.lastClaimTimestamp(recipient), lastClaimTimestampBefore);
-        assertEq(_sUSDC.secondsUntilNextClaim(recipient), secondsUintilNextClaimBefore);
+        assertEq(_sampleToken.balanceOf(recipient), balanceBefore + 1_000e18);
+        assertEq(_faucet.lastClaimTimestamp(recipient), lastClaimTimestampBefore);
+        assertEq(_faucet.secondsUntilNextClaim(recipient), secondsUintilNextClaimBefore);
     }
 
     function testClaim() public {
         address claimer = makeAddr("claimer");
-        uint256 balanceBefore = _sUSDC.balanceOf(claimer);
+        uint256 balanceBefore = _sampleToken.balanceOf(claimer);
 
         vm.startPrank(claimer);
-        _sUSDC.claimToken();
+        _faucet.claimToken();
         vm.stopPrank();
 
-        assertEq(_sUSDC.balanceOf(claimer), balanceBefore + _sUSDC.faucetClaimAmount());
-        assertEq(_sUSDC.lastClaimTimestamp(claimer), block.timestamp);
-        assertEq(_sUSDC.secondsUntilNextClaim(claimer), 1 days);
+        assertEq(_sampleToken.balanceOf(claimer), balanceBefore + _faucet.faucetClaimAmount());
+        assertEq(_faucet.lastClaimTimestamp(claimer), block.timestamp);
+        assertEq(_faucet.secondsUntilNextClaim(claimer), 1 days);
 
         // claim again after wait time passed
         vm.warp(block.timestamp + 1 days);
         vm.startPrank(claimer);
-        _sUSDC.claimToken();
+        _faucet.claimToken();
         vm.stopPrank();
-        assertEq(_sUSDC.balanceOf(claimer), balanceBefore + 2 * _sUSDC.faucetClaimAmount());
+        assertEq(_sampleToken.balanceOf(claimer), balanceBefore + 2 * _faucet.faucetClaimAmount());
     }
 
     function testClaimWhenFaucetTurnnedOff() public {
         address claimer = makeAddr("claimer");
 
-        vm.startPrank(_owner);
-        _sUSDC.setFaucetActive(false);
+        vm.startPrank(_faucetOwner);
+        _faucet.setFaucetActive(false);
         vm.stopPrank();
 
         vm.startPrank(claimer);
         vm.expectRevert("SpotlightTokenFaucet: faucet is not active");
-        _sUSDC.claimToken();
+        _faucet.claimToken();
     }
 
     function testClaimBeforeWaitTimePass() public {
         address claimer = makeAddr("claimer");
 
         vm.startPrank(claimer);
-        _sUSDC.claimToken();
+        _faucet.claimToken();
         vm.stopPrank();
 
         vm.startPrank(claimer);
         vm.expectRevert("SpotlightTokenFaucet: wait time has not passed");
-        _sUSDC.claimToken();
+        _faucet.claimToken();
     }
 
     function testClaimAgainWhenWaitTimeInactive() public {
         address claimer = makeAddr("claimer");
 
-        vm.startPrank(_owner);
-        _sUSDC.setWaitTimeActive(false);
+        vm.startPrank(_faucetOwner);
+        _faucet.setWaitTimeActive(false);
         vm.stopPrank();
 
         vm.startPrank(claimer);
-        _sUSDC.claimToken();
+        _faucet.claimToken();
         vm.stopPrank();
 
         vm.startPrank(claimer);
-        _sUSDC.claimToken();
+        _faucet.claimToken();
         vm.stopPrank();
 
-        assertEq(_sUSDC.lastClaimTimestamp(claimer), block.timestamp);
-        assertEq(_sUSDC.secondsUntilNextClaim(claimer), 0);
+        assertEq(_faucet.lastClaimTimestamp(claimer), block.timestamp);
+        assertEq(_faucet.secondsUntilNextClaim(claimer), 0);
+    }
+
+    function testDistributeOverBalance() public {
+        address recipient = makeAddr("recipient");
+
+        vm.startPrank(_faucetOwner);
+        vm.expectRevert();
+        _faucet.distributeToken(recipient, 2_001e18);
+        vm.startPrank(_faucetOwner);
     }
 }

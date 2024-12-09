@@ -2,21 +2,34 @@
 pragma solidity ^0.8.13;
 
 import {ISpotlightFaucet} from "./ISpotlightFaucet.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract SpotlightTokenFaucet is Ownable, ERC20, ISpotlightFaucet {
+contract SpotlightTokenFaucet is Ownable, ISpotlightFaucet {
+    address private immutable _tokenAddress;
+    IERC20 private _token;
+
     bool private _isFaucetActive = true;
     bool private _isWaitTimeActive = true;
     uint256 private _waitTime = 1 days;
     uint256 private _faucetClaimAmount = 1_000e18;
     mapping(address => uint256) private _lastClaimTime;
 
-    constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) Ownable(msg.sender) {}
+    constructor(address tokenAddress_) Ownable(msg.sender) {
+        _tokenAddress = tokenAddress_;
+        _token = IERC20(tokenAddress_);
+    }
 
     modifier onlyFaucetActive() {
         _checkIsFaucetActive();
         _;
+    }
+
+    /**
+     * @dev See {ISpotlightFaucet-tokenAddress}.
+     */
+    function tokenAddress() public view returns (address) {
+        return _tokenAddress;
     }
 
     /**
@@ -113,7 +126,7 @@ contract SpotlightTokenFaucet is Ownable, ERC20, ISpotlightFaucet {
         }
 
         _lastClaimTime[msg.sender] = block.timestamp;
-        _mint(msg.sender, _faucetClaimAmount);
+        _token.transfer(msg.sender, _faucetClaimAmount);
     }
 
     /**
@@ -122,7 +135,7 @@ contract SpotlightTokenFaucet is Ownable, ERC20, ISpotlightFaucet {
      * @notice onlyOwner
      */
     function distributeToken(address account, uint256 value) external override onlyOwner {
-        _mint(account, value);
+        _token.transfer(account, value);
     }
 
     /**

@@ -3,6 +3,11 @@ pragma solidity ^0.8.13;
 
 interface ISpotlightFaucet {
     /**
+     * @dev Returns the address of the token that the faucet distributes.
+     */
+    function tokenAddress() external view returns (address);
+
+    /**
      * @dev Returns the amount of tokens that can be claimed from the faucet at once.
      */
     function faucetClaimAmount() external view returns (uint256);
