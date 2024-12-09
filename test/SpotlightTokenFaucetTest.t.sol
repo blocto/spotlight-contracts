@@ -7,7 +7,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract SampleToken is ERC20 {
     constructor() ERC20("Sample Token", "SMT") {
-        _mint(msg.sender, 1_000_000e18);
+        _mint(msg.sender, 2_000e18);
     }
 }
 
@@ -56,6 +56,13 @@ contract SpotlightTokenFaucetTest is Test {
         vm.startPrank(notOwner);
         vm.expectRevert();
         _faucet.setFaucetActive(false);
+    }
+
+    function testNotOwnerSetFaucetClaimAmount() public {
+        address notOwner = makeAddr("notOwner");
+        vm.startPrank(notOwner);
+        vm.expectRevert();
+        _faucet.setFaucetClaimAmount(2_000e18);
     }
 
     function testOwnerSetFaucetActive() public {

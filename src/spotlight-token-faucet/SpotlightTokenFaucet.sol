@@ -2,22 +2,23 @@
 pragma solidity ^0.8.13;
 
 import {ISpotlightFaucet} from "./ISpotlightFaucet.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract SpotlightTokenFaucet is Ownable, ISpotlightFaucet {
     address private immutable _tokenAddress;
-    IERC20 private _token;
+    ERC20 private _token;
 
     bool private _isFaucetActive = true;
     bool private _isWaitTimeActive = true;
     uint256 private _waitTime = 1 days;
-    uint256 private _faucetClaimAmount = 1_000e18;
+    uint256 private _faucetClaimAmount;
     mapping(address => uint256) private _lastClaimTime;
 
     constructor(address tokenAddress_) Ownable(msg.sender) {
         _tokenAddress = tokenAddress_;
-        _token = IERC20(tokenAddress_);
+        _token = ERC20(tokenAddress_);
+        _faucetClaimAmount = 1000 * 10 ** _token.decimals();
     }
 
     modifier onlyFaucetActive() {
@@ -37,6 +38,10 @@ contract SpotlightTokenFaucet is Ownable, ISpotlightFaucet {
      */
     function faucetClaimAmount() public view returns (uint256) {
         return _faucetClaimAmount;
+    }
+
+    function setFaucetClaimAmount(uint256 newClaimAmount) public onlyOwner {
+        _faucetClaimAmount = newClaimAmount;
     }
 
     /**
