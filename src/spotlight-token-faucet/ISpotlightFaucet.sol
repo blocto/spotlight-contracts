@@ -13,6 +13,11 @@ interface ISpotlightFaucet {
     function faucetClaimAmount() external view returns (uint256);
 
     /**
+     * @dev Sets the amount of tokens that can be claimed from the faucet at once.
+     */
+    function setFaucetClaimAmount(uint256) external;
+
+    /**
      * @dev Returns whether the faucet is active.
      */
     function isFaucetActive() external view returns (bool);
