@@ -20,21 +20,19 @@ contract SpotlightTokenFactoryTest is Test {
         vm.stopPrank();
     }
 
-    function testCalculateTokneAddress() public view {
+    function testCreateTokneAddress() public {
         address tokenCreator = makeAddr("tokenCreator");
+        uint256 numberOfTokensCreatedBefore = _factory.numberOfTokensCreated(tokenCreator);
+
         string memory tokenName = "Test Token";
         string memory tokenSymbol = "TT";
 
-        address calculatedAddr = _factory.calculateTokenAddress(
-            tokenCreator,
-            tokenName,
-            tokenSymbol
-        );
+        address calculatedAddr = _factory.calculateTokenAddress(tokenCreator, tokenName, tokenSymbol);
 
         vm.startPrank(tokenCreator);
-        address tokenAddr = _factory.createToken(tokenName, tokenSymbol);
+        address tokenAddr = _factory.createToken(tokenName, tokenSymbol, calculatedAddr);
         vm.stopPrank();
 
-        assertEq(calculatedAddr, tokenAddr);
+        assertEq(_factory.numberOfTokensCreated(tokenCreator), numberOfTokensCreatedBefore + 1);
     }
 }
