@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract SpotlightTokenCollection is ERC721, Ownable {
+contract SpotlightTokenCollection is Ownable, ERC721 {
     bool private _isTransferEnabled = false;
     bool private _isMintEnabled = false;
     address private _tokenFactory;
@@ -12,7 +12,10 @@ contract SpotlightTokenCollection is ERC721, Ownable {
     uint256 private _nextTokenId;
     string private _tokenURI;
 
-    constructor(address tokenFactory_) ERC721("SpotlightTokenCollection", "SpotlightToken") Ownable(msg.sender) {
+    constructor(address owner_, address tokenFactory_)
+        Ownable(owner_)
+        ERC721("SpotlightTokenCollection", "SpotlightToken")
+    {
         _tokenFactory = tokenFactory_;
     }
 
