@@ -2,8 +2,9 @@
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Test.sol";
-import {SpotlightTokenFactory} from "../src/spotlight-token-factory/SpotlightTokenFactory.sol";
 import {SpotlightToken} from "../src/spotlight-token/SpotlightToken.sol";
+import {SpotlightTokenCollection} from "../src/spotlight-token-collection/SpotlightTokenCollection.sol";
+import {SpotlightTokenFactory} from "../src/spotlight-token-factory/SpotlightTokenFactory.sol";
 
 contract SpotlightTokenFactoryTest is Test {
     address private _factoryOwner;
@@ -11,16 +12,26 @@ contract SpotlightTokenFactoryTest is Test {
     SpotlightTokenFactory private _factory;
     address private _factoryAddress;
 
+    SpotlightTokenCollection private _tokenCollection;
+    address private _tokenCollectionAddress;
+
     function setUp() public {
         _factoryOwner = makeAddr("factoryOwner");
 
         vm.startPrank(_factoryOwner);
-        _factory = new SpotlightTokenFactory();
+        _factory = new SpotlightTokenFactory(0, address(0));
         _factoryAddress = address(_factory);
+        vm.stopPrank();
+
+        _tokenCollectionAddress = _factory.tokenCollection();
+        _tokenCollection = SpotlightTokenCollection(_tokenCollectionAddress);
+
+        vm.startPrank(_factoryOwner);
+        _tokenCollection.setMintEnabled(true);
         vm.stopPrank();
     }
 
-    function testCreateTokneAddress() public {
+    function testCreateToken() public {
         address tokenCreator = makeAddr("tokenCreator");
         uint256 numberOfTokensCreatedBefore = _factory.numberOfTokensCreated(tokenCreator);
 
