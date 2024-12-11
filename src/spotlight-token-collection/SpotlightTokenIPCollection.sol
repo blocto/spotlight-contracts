@@ -3,18 +3,20 @@ pragma solidity ^0.8.13;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ISpotlightTokenIPCollection} from "./ISpotlightTokenIPCollection.sol";
 
-contract SpotlightTokenCollection is Ownable, ERC721 {
+contract SpotlightTokenIPCollection is Ownable, ERC721, ISpotlightTokenIPCollection {
     bool private _isTransferEnabled = false;
     bool private _isMintEnabled = false;
     address private _tokenFactory;
 
     uint256 private _nextTokenId;
-    string private _tokenURI;
+    string private _tokenURI =
+        "https://blocto.mypinata.cloud/ipfs/bafkreibqge4t7rsppnarffvrzlfph5rk5ajvupa4oyk4v2h3ieqccty4ye";
 
     constructor(address owner_, address tokenFactory_)
         Ownable(owner_)
-        ERC721("SpotlightTokenCollection", "SpotlightToken")
+        ERC721("Spotlight Meme IP", "Spotlight Meme IP")
     {
         _tokenFactory = tokenFactory_;
     }
@@ -46,8 +48,12 @@ contract SpotlightTokenCollection is Ownable, ERC721 {
 
     /**
      * @dev See {ISpotlightTokenCollection-isMintEnabled}.
+     * @notice the owner and the token factory can mint regardless of this setting.
      */
     function isMintEnabled() public view returns (bool) {
+        if (msg.sender == owner() || msg.sender == tokenFactory()) {
+            return true;
+        }
         return _isMintEnabled;
     }
 
@@ -76,8 +82,12 @@ contract SpotlightTokenCollection is Ownable, ERC721 {
 
     /**
      * @dev See {ISpotlightTokenCollection-isTransferEnabled}.
+     * @notice the owner and the token factory can transfer tokens regardless of this setting.
      */
     function isTransferEnabled() public view returns (bool) {
+        if (msg.sender == owner() || msg.sender == tokenFactory()) {
+            return true;
+        }
         return _isTransferEnabled;
     }
 
@@ -94,10 +104,6 @@ contract SpotlightTokenCollection is Ownable, ERC721 {
      * @notice onlyOwner or tokenFactory
      */
     function mint(address to) public onlyMintEnabled returns (uint256) {
-        if (msg.sender != owner() && msg.sender != tokenFactory()) {
-            revert("SpotlightTokenCollection: only owner or token factory can mint");
-        }
-
         uint256 tokenId = _nextTokenId;
         _mint(to, tokenId);
         _nextTokenId = _nextTokenId + 1;

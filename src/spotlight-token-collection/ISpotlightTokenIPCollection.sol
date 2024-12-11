@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 /**
  * @dev A contract implementing ISpotlightTokenCollection must also implement IERC721.
  */
-interface ISpotlightTokenCollection {
+interface ISpotlightTokenIPCollection {
     /**
      * @dev Returns the total number of tokens minted.
      */
