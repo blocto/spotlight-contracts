@@ -12,6 +12,7 @@ interface ISpotlightTokenFactory {
      * @param tokenCreator The account that created the token.
      * @param tokenName The name of the created token.
      * @param tokenSymbol The symbol of the created token.
+     * @param tokenIpNFTId The ID of the NFT representing the IP associated with the token.
      * @param initialBuyAmount The amount of tokens purchased initially.
      * @param initialBuyRecipient The address that received the initial purchased tokens.
      * @param feeToken The address of the token used for paying the creation fee.
@@ -25,6 +26,7 @@ interface ISpotlightTokenFactory {
         address tokenCreator,
         string tokenName,
         string tokenSymbol,
+        uint256 tokenIpNFTId,
         uint256 initialBuyAmount,
         address initialBuyRecipient,
         address feeToken,
@@ -109,4 +111,9 @@ interface ISpotlightTokenFactory {
      * @dev Returns the number of tokens created by a token creator
      */
     function numberOfTokensCreated(address tokenCreator) external view returns (uint256);
+
+    /**
+     * @notice Allows the owner to claim the fee accumulated in the contract
+     */
+    function claimFee(address recipient) external;
 }

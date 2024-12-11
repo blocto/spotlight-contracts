@@ -10,9 +10,9 @@ import {StoryWorkflowStructs} from "./story-workflow-interfaces/StoryWorkflowStr
 import {IStoryDerivativeWorkflows} from "./story-workflow-interfaces/IStoryDerivativeWorkflows.sol";
 
 contract SpotlightTokenFactory is Ownable, ISpotlightTokenFactory {
-    uint256 private _createTokenFee;
-    address private _feeTokenAddress;
-    IERC20 private _feeToken;
+    uint256 private _creationFee;
+    address private _creationFeeTokenAddress;
+    IERC20 private _creationFeeToken;
 
     SpotlightTokenIPCollection private _tokenIpCollection;
     address private _tokenIpCollectionAddress;
@@ -22,15 +22,14 @@ contract SpotlightTokenFactory is Ownable, ISpotlightTokenFactory {
 
     mapping(address => uint256) private _numbersOfTokensCreated;
 
-    constructor(uint256 createTokenFee_, address feeToken_, address storyDerivativeWorkflows_) Ownable(msg.sender) {
-        _createTokenFee = createTokenFee_;
-        _feeTokenAddress = feeToken_;
-        _feeToken = IERC20(feeToken_);
+    constructor(uint256 creationFee_, address creationFeeToken_, address storyDerivativeWorkflows_)
+        Ownable(msg.sender)
+    {
+        _creationFee = creationFee_;
+        _creationFeeTokenAddress = creationFeeToken_;
+        _creationFeeToken = IERC20(creationFeeToken_);
 
-        _tokenIpCollection = new SpotlightTokenIPCollection(
-            msg.sender, // owner
-            address(this) // token factory
-        );
+        _tokenIpCollection = new SpotlightTokenIPCollection(msg.sender, address(this));
         _tokenIpCollectionAddress = address(_tokenIpCollection);
 
         _storyDerivativeWorkflowsAddress = storyDerivativeWorkflows_;
@@ -47,20 +46,20 @@ contract SpotlightTokenFactory is Ownable, ISpotlightTokenFactory {
     }
 
     function createTokenFee() public view returns (uint256) {
-        return _createTokenFee;
+        return _creationFee;
     }
 
     function setCreateTokenFee(uint256 newFee) external onlyOwner {
-        _createTokenFee = newFee;
+        _creationFee = newFee;
     }
 
     function feeToken() public view returns (address) {
-        return _feeTokenAddress;
+        return _creationFeeTokenAddress;
     }
 
     function setFeeToken(address newToken) external onlyOwner {
-        _feeTokenAddress = newToken;
-        _feeToken = IERC20(newToken);
+        _creationFeeTokenAddress = newToken;
+        _creationFeeToken = IERC20(newToken);
     }
 
     function calculateTokenAddress(address tokenCreator, string memory tokenName, string memory tokenSymbol)
@@ -85,11 +84,15 @@ contract SpotlightTokenFactory is Ownable, ISpotlightTokenFactory {
         StoryWorkflowStructs.IPMetadata calldata ipMetadata,
         StoryWorkflowStructs.SignatureData calldata sigMetadata,
         StoryWorkflowStructs.SignatureData calldata sigRegister
-    ) external returns (address) {
+    ) external returns (address tokenAddress, address ipId) {
+        address tokenCreator = msg.sender;
+        address tokenOwner = address(this);
+
         // deply spotlight token
         SpotlightToken token =
-            new SpotlightToken{salt: _slat(msg.sender)}(address(this), msg.sender, tokenName_, tokenSymbol_);
-        if (address(token) != predeployedTokenAddress) {
+            new SpotlightToken{salt: _slat(tokenCreator)}(tokenOwner, tokenCreator, tokenName_, tokenSymbol_);
+        tokenAddress = address(token);
+        if (tokenAddress != predeployedTokenAddress) {
             revert("The address of the created token does not match the predeployed address");
         }
 
@@ -97,17 +100,43 @@ contract SpotlightTokenFactory is Ownable, ISpotlightTokenFactory {
         uint256 tokenIpNFTId = _tokenIpCollection.mint(address(this));
 
         // register ip and set meta data
+        ipId = _storyDerivativeWorkflows.registerIpAndMakeDerivative(
+            tokenIpCollection(), tokenIpNFTId, derivData, ipMetadata, sigMetadata, sigRegister
+        );
 
-        // return and emit event
-        _numbersOfTokensCreated[msg.sender] += 1;
+        // transfer nft to creator
+        _tokenIpCollection.transferFrom(address(this), tokenCreator, tokenIpNFTId);
 
         // todo: charge fee and initial buy
+        if (createTokenFee() > 0) {
+            _creationFeeToken.transferFrom(tokenCreator, address(this), createTokenFee());
+        }
 
-        return address(token);
+        // emit event
+        _numbersOfTokensCreated[tokenCreator] += 1;
+
+        emit SpotlightTokenCreated(
+            tokenAddress,
+            ipId,
+            tokenCreator,
+            tokenName_,
+            tokenSymbol_,
+            tokenIpNFTId,
+            initialBuyAmount,
+            initialBuyRecipient,
+            feeToken(),
+            createTokenFee(),
+            address(this),
+            address(0)
+        );
     }
 
     function numberOfTokensCreated(address tokenCreator) public view returns (uint256) {
         return _numbersOfTokensCreated[tokenCreator];
+    }
+
+    function claimFee(address recipient) external onlyOwner {
+        _creationFeeToken.transfer(recipient, _creationFeeToken.balanceOf(address(this)));
     }
 
     // @dev Private functions
