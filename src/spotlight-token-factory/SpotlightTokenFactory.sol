@@ -1,58 +1,49 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.13;
 
-import {ISpotlightTokenFactory} from "./ISpotlightTokenFactory.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ISpotlightTokenFactory} from "./ISpotlightTokenFactory.sol";
 import {SpotlightToken} from "../spotlight-token/SpotlightToken.sol";
 import {SpotlightTokenIPCollection} from "../spotlight-token-collection/SpotlightTokenIPCollection.sol";
 import {StoryWorkflowStructs} from "./story-workflow-interfaces/StoryWorkflowStructs.sol";
-import {IStoryRegistrationWorkflows} from "./story-workflow-interfaces/IStoryRegistrationWorkflows.sol";
 import {IStoryDerivativeWorkflows} from "./story-workflow-interfaces/IStoryDerivativeWorkflows.sol";
 
 contract SpotlightTokenFactory is Ownable, ISpotlightTokenFactory {
-    uint256 private _createTokenFee = 0;
+    uint256 private _createTokenFee;
     address private _feeTokenAddress;
     IERC20 private _feeToken;
 
     SpotlightTokenIPCollection private _tokenIpCollection;
     address private _tokenIpCollectionAddress;
 
-    IStoryRegistrationWorkflows private _storyRegistrationWorkflows;
-    address private _storyRegistrationWorkflowsAddress;
     IStoryDerivativeWorkflows private _storyDerivativeWorkflows;
     address private _storyDerivativeWorkflowsAddress;
 
     mapping(address => uint256) private _numbersOfTokensCreated;
 
-    constructor(
-        uint256 createTokenFee_,
-        address feeToken_,
-        address storyRegistrationWorkflows_,
-        address storyDerivativeWorkflows_
-    ) Ownable(msg.sender) {
+    constructor(uint256 createTokenFee_, address feeToken_, address storyDerivativeWorkflows_) Ownable(msg.sender) {
         _createTokenFee = createTokenFee_;
         _feeTokenAddress = feeToken_;
         _feeToken = IERC20(feeToken_);
+
         _tokenIpCollection = new SpotlightTokenIPCollection(
             msg.sender, // owner
             address(this) // token factory
         );
         _tokenIpCollectionAddress = address(_tokenIpCollection);
 
-        _storyRegistrationWorkflows = IStoryRegistrationWorkflows(storyRegistrationWorkflows_);
-        _storyRegistrationWorkflowsAddress = storyRegistrationWorkflows_;
-        _storyDerivativeWorkflows = IStoryDerivativeWorkflows(storyDerivativeWorkflows_);
         _storyDerivativeWorkflowsAddress = storyDerivativeWorkflows_;
+        _storyDerivativeWorkflows = IStoryDerivativeWorkflows(storyDerivativeWorkflows_);
     }
 
-    function tokenCollection() public view returns (address) {
+    function tokenIpCollection() public view returns (address) {
         return _tokenIpCollectionAddress;
     }
 
-    function setTokenCollection(address newTokenCollection) external onlyOwner {
-        _tokenIpCollectionAddress = newTokenCollection;
-        _tokenIpCollection = SpotlightTokenIPCollection(newTokenCollection);
+    function setTokenIpCollection(address newTokenIpCollection) external onlyOwner {
+        _tokenIpCollectionAddress = newTokenIpCollection;
+        _tokenIpCollection = SpotlightTokenIPCollection(newTokenIpCollection);
     }
 
     function createTokenFee() public view returns (uint256) {
@@ -72,10 +63,6 @@ contract SpotlightTokenFactory is Ownable, ISpotlightTokenFactory {
         _feeToken = IERC20(newToken);
     }
 
-    function numberOfTokensCreated(address tokenCreator) external view returns (uint256) {
-        return _numbersOfTokensCreated[tokenCreator];
-    }
-
     function calculateTokenAddress(address tokenCreator, string memory tokenName, string memory tokenSymbol)
         external
         view
@@ -88,10 +75,17 @@ contract SpotlightTokenFactory is Ownable, ISpotlightTokenFactory {
         return address(uint160(uint256(calculatedHash)));
     }
 
-    function createToken(string memory tokenName_, string memory tokenSymbol_, address predeployedTokenAddress)
-        external
-        returns (address)
-    {
+    function createToken(
+        string memory tokenName_,
+        string memory tokenSymbol_,
+        address predeployedTokenAddress,
+        uint256 initialBuyAmount,
+        address initialBuyRecipient,
+        StoryWorkflowStructs.MakeDerivative calldata derivData,
+        StoryWorkflowStructs.IPMetadata calldata ipMetadata,
+        StoryWorkflowStructs.SignatureData calldata sigMetadata,
+        StoryWorkflowStructs.SignatureData calldata sigRegister
+    ) external returns (address) {
         // deply spotlight token
         SpotlightToken token =
             new SpotlightToken{salt: _slat(msg.sender)}(address(this), msg.sender, tokenName_, tokenSymbol_);
@@ -100,7 +94,7 @@ contract SpotlightTokenFactory is Ownable, ISpotlightTokenFactory {
         }
 
         // mint spotlight token nft
-        uint256 spotlightTokenNFTId = _tokenIpCollection.mint(msg.sender);
+        uint256 tokenIpNFTId = _tokenIpCollection.mint(address(this));
 
         // register ip and set meta data
 
@@ -110,6 +104,10 @@ contract SpotlightTokenFactory is Ownable, ISpotlightTokenFactory {
         // todo: charge fee and initial buy
 
         return address(token);
+    }
+
+    function numberOfTokensCreated(address tokenCreator) public view returns (uint256) {
+        return _numbersOfTokensCreated[tokenCreator];
     }
 
     // @dev Private functions
@@ -125,6 +123,6 @@ contract SpotlightTokenFactory is Ownable, ISpotlightTokenFactory {
     }
 
     function _slat(address account) internal view returns (bytes32) {
-        return bytes32(_numbersOfTokensCreated[account]);
+        return bytes32(numberOfTokensCreated(account));
     }
 }
