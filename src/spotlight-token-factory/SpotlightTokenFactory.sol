@@ -75,55 +75,36 @@ contract SpotlightTokenFactory is Ownable, ISpotlightTokenFactory {
     }
 
     function createToken(
-        string memory tokenName_,
-        string memory tokenSymbol_,
-        address predeployedTokenAddress,
-        uint256 initialBuyAmount,
-        address initialBuyRecipient,
+        TokenCreationData memory tokenCreationData,
+        IntialBuyData memory initialBuyData,
         StoryWorkflowStructs.MakeDerivative calldata derivData,
         StoryWorkflowStructs.IPMetadata calldata ipMetadata,
         StoryWorkflowStructs.SignatureData calldata sigMetadata,
         StoryWorkflowStructs.SignatureData calldata sigRegister
     ) external returns (address tokenAddress, address ipId) {
-        address tokenCreator = msg.sender;
-        address tokenOwner = address(this);
+        tokenAddress = _deplySpotlightToken(tokenCreationData, msg.sender);
 
-        // deply spotlight token
-        SpotlightToken token =
-            new SpotlightToken{salt: _slat(tokenCreator)}(tokenOwner, tokenCreator, tokenName_, tokenSymbol_);
-        tokenAddress = address(token);
-        if (tokenAddress != predeployedTokenAddress) {
-            revert("The address of the created token does not match the predeployed address");
-        }
-
-        // mint spotlight token nft
         uint256 tokenIpNFTId = _tokenIpCollection.mint(address(this));
 
-        // register ip and set meta data
         ipId = _storyDerivativeWorkflows.registerIpAndMakeDerivative(
             tokenIpCollection(), tokenIpNFTId, derivData, ipMetadata, sigMetadata, sigRegister
         );
 
-        // transfer nft to creator
-        _tokenIpCollection.transferFrom(address(this), tokenCreator, tokenIpNFTId);
+        _tokenIpCollection.transferFrom(address(this), msg.sender, tokenIpNFTId);
 
-        // todo: charge fee and initial buy
-        if (createTokenFee() > 0) {
-            _creationFeeToken.transferFrom(tokenCreator, address(this), createTokenFee());
-        }
-
-        // emit event
-        _numbersOfTokensCreated[tokenCreator] += 1;
+        _initalBuy(msg.sender, initialBuyData);
+        _chargeCreationFee(msg.sender);
+        _numbersOfTokensCreated[msg.sender] += 1;
 
         emit SpotlightTokenCreated(
             tokenAddress,
             ipId,
-            tokenCreator,
-            tokenName_,
-            tokenSymbol_,
+            msg.sender,
+            tokenCreationData.tokenName,
+            tokenCreationData.tokenSymbol,
             tokenIpNFTId,
-            initialBuyAmount,
-            initialBuyRecipient,
+            initialBuyData.initialBuyAmount,
+            initialBuyData.initialBuyRecipient,
             feeToken(),
             createTokenFee(),
             address(this),
@@ -153,5 +134,27 @@ contract SpotlightTokenFactory is Ownable, ISpotlightTokenFactory {
 
     function _slat(address account) internal view returns (bytes32) {
         return bytes32(numberOfTokensCreated(account));
+    }
+
+    function _deplySpotlightToken(TokenCreationData memory tokenCreationData, address creator)
+        internal
+        returns (address)
+    {
+        SpotlightToken token = new SpotlightToken{salt: _slat(creator)}(
+            address(this), msg.sender, tokenCreationData.tokenName, tokenCreationData.tokenSymbol
+        );
+        address tokenAddress = address(token);
+        if (tokenAddress != tokenCreationData.predeployedTokenAddress) {
+            revert("The address of the created token does not match the predeployed address");
+        }
+        return tokenAddress;
+    }
+
+    function _initalBuy(address tokenAddress, IntialBuyData memory initialBuyData) internal {}
+
+    function _chargeCreationFee(address tokenCreator) internal {
+        if (createTokenFee() > 0) {
+            _creationFeeToken.transferFrom(tokenCreator, address(this), createTokenFee());
+        }
     }
 }

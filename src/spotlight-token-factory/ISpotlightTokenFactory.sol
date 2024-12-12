@@ -4,6 +4,26 @@ pragma solidity ^0.8.13;
 import {StoryWorkflowStructs} from "./story-workflow-interfaces/StoryWorkflowStructs.sol";
 
 interface ISpotlightTokenFactory {
+    /*
+     * @param tokenName_ The name of the token.
+     * @param tokenSymbol_ The symbol of the token.
+     * @param predeployedTokenAddress The address of the predeployed token. The transaction reverts if the actual token address differs.
+     */
+    struct TokenCreationData {
+        string tokenName;
+        string tokenSymbol;
+        address predeployedTokenAddress;
+    }
+
+    /*
+     * @param initialBuyAmount The amount of tokens to be purchased initially.
+     * @param initialBuyRecipient The recipient address for the initial token purchase.
+     */
+    struct IntialBuyData {
+        uint256 initialBuyAmount;
+        address initialBuyRecipient;
+    }
+
     /**
      * @dev Emitted when a new Spotlight token is successfully created.
      *
@@ -81,12 +101,8 @@ interface ISpotlightTokenFactory {
 
     /**
      * @dev Creates a new token with the specified parameters and initializes it.
-     *
-     * @param tokenName_ The name of the token.
-     * @param tokenSymbol_ The symbol of the token.
-     * @param predeployedTokenAddress The address of the predeployed token. The transaction reverts if the actual token address differs.
-     * @param initialBuyAmount The amount of tokens to be purchased initially.
-     * @param initialBuyRecipient The recipient address for the initial token purchase.
+     * @param tokenCreationData Details for creating the token.
+     * @param initialBuyData Details for the initial purchase of the token.
      * @param derivData Details for creating a derivative token. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
      * @param ipMetadata Metadata for the intellectual property. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
      * @param sigMetadata Signature data for token creation. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
@@ -96,11 +112,8 @@ interface ISpotlightTokenFactory {
      * @return ipId The ID of the newly registered intellectual property.
      */
     function createToken(
-        string memory tokenName_,
-        string memory tokenSymbol_,
-        address predeployedTokenAddress,
-        uint256 initialBuyAmount,
-        address initialBuyRecipient,
+        TokenCreationData memory tokenCreationData,
+        IntialBuyData memory initialBuyData,
         StoryWorkflowStructs.MakeDerivative calldata derivData,
         StoryWorkflowStructs.IPMetadata calldata ipMetadata,
         StoryWorkflowStructs.SignatureData calldata sigMetadata,
