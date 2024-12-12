@@ -88,6 +88,16 @@ interface ISpotlightTokenFactory {
     function setFeeToken(address newToken) external;
 
     /**
+     * @dev Returns the address of the story derivative workflows contract
+     */
+    function storyDerivativeWorkflows() external view returns (address);
+
+    /**
+     * @dev Sets the address of the story derivative workflows contract
+     */
+    function setStoryDerivativeWorkflows(address newStoryDerivativeWorkflows) external;
+
+    /**
      * @dev Computes the address of a token created by the specified token creator.
      * @param tokenCreator The address of the entity creating the token.
      * @param tokenName The name of the token.

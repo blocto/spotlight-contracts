@@ -8,52 +8,108 @@ import {SpotlightTokenFactory} from "../src/spotlight-token-factory/SpotlightTok
 
 contract SpotlightTokenFactoryTest is Test {
     address private _factoryOwner;
+    address private STORY_DERIVATIVE_WORKFLOWS_ADDRESS = 0xa8815CEB96857FFb8f5F8ce920b1Ae6D70254C7B;
+    uint256 private DEFAULT_CREATION_FEE = 0;
+    address private DEFAULT_CREATION_FEE_TOKEN = makeAddr("defaultCreationFeeToken");
 
     SpotlightTokenFactory private _factory;
     address private _factoryAddress;
 
-    SpotlightTokenIPCollection private _tokenCollection;
-    address private _tokenCollectionAddress;
-
     function setUp() public {
-        // _factoryOwner = makeAddr("factoryOwner");
-        // vm.startPrank(_factoryOwner);
-        // _factory = new SpotlightTokenFactory(0, address(0));
-        // _factoryAddress = address(_factory);
-        // vm.stopPrank();
-        // _tokenCollectionAddress = _factory.tokenCollection();
-        // _tokenCollection = SpotlightTokenIPCollection(_tokenCollectionAddress);
-        // vm.startPrank(_factoryOwner);
-        // _tokenCollection.setMintEnabled(true);
-        // vm.stopPrank();
+        _factoryOwner = makeAddr("factoryOwner");
+        vm.startPrank(_factoryOwner);
+        _factory = new SpotlightTokenFactory(
+            DEFAULT_CREATION_FEE, DEFAULT_CREATION_FEE_TOKEN, STORY_DERIVATIVE_WORKFLOWS_ADDRESS
+        );
+        _factoryAddress = address(_factory);
+        vm.stopPrank();
     }
 
-    // function testCreateToken() public {
-    //     address tokenCreator = makeAddr("tokenCreator");
-    //     uint256 numberOfTokensCreatedBefore = _factory.numberOfTokensCreated(
-    //         tokenCreator
-    //     );
+    function testTokenFactoryConstructor() public view {
+        assertEq(_factory.owner(), _factoryOwner);
+        assertEq(_factory.createTokenFee(), DEFAULT_CREATION_FEE);
+        assertEq(_factory.feeToken(), DEFAULT_CREATION_FEE_TOKEN);
+        assertEq(_factory.storyDerivativeWorkflows(), STORY_DERIVATIVE_WORKFLOWS_ADDRESS);
 
-    //     string memory tokenName = "Test Token";
-    //     string memory tokenSymbol = "TT";
+        address tokenIpCollectionAddress = _factory.tokenIpCollection();
+        SpotlightTokenIPCollection tokenIpCollection = SpotlightTokenIPCollection(tokenIpCollectionAddress);
+        assertEq(tokenIpCollection.owner(), _factoryOwner);
+        assertEq(tokenIpCollection.tokenFactory(), _factoryAddress);
+    }
 
-    //     address calculatedAddr = _factory.calculateTokenAddress(
-    //         tokenCreator,
-    //         tokenName,
-    //         tokenSymbol
-    //     );
+    function testNotOwnerSetTokenIpCollection() public {
+        address notOwner = makeAddr("notOwner");
 
-    //     vm.startPrank(tokenCreator);
-    //     address tokenAddr = _factory.createToken(
-    //         tokenName,
-    //         tokenSymbol,
-    //         calculatedAddr
-    //     );
-    //     vm.stopPrank();
+        vm.startPrank(notOwner);
+        vm.expectRevert();
+        _factory.setTokenIpCollection(makeAddr("newTokenIpCollection"));
+        vm.stopPrank();
+    }
 
-    //     assertEq(
-    //         _factory.numberOfTokensCreated(tokenCreator),
-    //         numberOfTokensCreatedBefore + 1
-    //     );
-    // }
+    function testSetTokneIpCollection() public {
+        address newTokenIpCollection = makeAddr("newTokenIpCollection");
+
+        vm.startPrank(_factoryOwner);
+        _factory.setTokenIpCollection(newTokenIpCollection);
+        vm.stopPrank();
+        assertEq(_factory.tokenIpCollection(), newTokenIpCollection);
+    }
+
+    function testNotOwnerSetCreationFee() public {
+        address notOwner = makeAddr("notOwner");
+
+        vm.startPrank(notOwner);
+        vm.expectRevert();
+        _factory.setCreateTokenFee(100);
+        vm.stopPrank();
+    }
+
+    function testSetCreationFee() public {
+        uint256 newFee = 100;
+
+        vm.startPrank(_factoryOwner);
+        _factory.setCreateTokenFee(newFee);
+        vm.stopPrank();
+        assertEq(_factory.createTokenFee(), newFee);
+    }
+
+    function testNotOwnerSetCreationFeeToken() public {
+        address notOwner = makeAddr("notOwner");
+        address newToken = makeAddr("newToken");
+
+        vm.startPrank(notOwner);
+        vm.expectRevert();
+        _factory.setFeeToken(newToken);
+        vm.stopPrank();
+    }
+
+    function testSetCreationFeeToken() public {
+        address newToken = makeAddr("newToken");
+
+        vm.startPrank(_factoryOwner);
+        _factory.setFeeToken(newToken);
+        vm.stopPrank();
+        assertEq(_factory.feeToken(), newToken);
+    }
+
+    function testNotOwnerSetStoryDerivativeWorkflows() public {
+        address notOwner = makeAddr("notOwner");
+        address newStoryDerivativeWorkflows = makeAddr("newStoryDerivativeWorkflows");
+
+        vm.startPrank(notOwner);
+        vm.expectRevert();
+        _factory.setStoryDerivativeWorkflows(newStoryDerivativeWorkflows);
+        vm.stopPrank();
+    }
+
+    function testSetStoryDerivativeWorkflows() public {
+        address newStoryDerivativeWorkflows = makeAddr("newStoryDerivativeWorkflows");
+
+        vm.startPrank(_factoryOwner);
+        _factory.setStoryDerivativeWorkflows(newStoryDerivativeWorkflows);
+        vm.stopPrank();
+        assertEq(_factory.storyDerivativeWorkflows(), newStoryDerivativeWorkflows);
+    }
+
+    // todo: test createToken
 }

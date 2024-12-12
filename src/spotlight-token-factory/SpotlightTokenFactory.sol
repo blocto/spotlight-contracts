@@ -62,6 +62,15 @@ contract SpotlightTokenFactory is Ownable, ISpotlightTokenFactory {
         _creationFeeToken = IERC20(newToken);
     }
 
+    function storyDerivativeWorkflows() public view returns (address) {
+        return _storyDerivativeWorkflowsAddress;
+    }
+
+    function setStoryDerivativeWorkflows(address newStoryDerivativeWorkflows) external onlyOwner {
+        _storyDerivativeWorkflowsAddress = newStoryDerivativeWorkflows;
+        _storyDerivativeWorkflows = IStoryDerivativeWorkflows(newStoryDerivativeWorkflows);
+    }
+
     function calculateTokenAddress(address tokenCreator, string memory tokenName, string memory tokenSymbol)
         external
         view
