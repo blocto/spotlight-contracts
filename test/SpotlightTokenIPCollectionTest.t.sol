@@ -19,7 +19,9 @@ contract SpotlightTokenIPCollectionTest is Test {
         _owner = makeAddr("owner");
         _tokenFactoryAddr = makeAddr("tokenFactory");
 
-        _tokenIpCollection = new SpotlightTokenIPCollection(_owner, _tokenFactoryAddr);
+        vm.startPrank(_owner);
+        _tokenIpCollection = new SpotlightTokenIPCollection(_tokenFactoryAddr);
+        vm.stopPrank();
         _tokenIpCollectionAddr = address(_tokenIpCollection);
     }
 

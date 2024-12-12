@@ -29,9 +29,6 @@ contract SpotlightTokenFactory is Ownable, ISpotlightTokenFactory {
         _creationFeeTokenAddress = creationFeeToken_;
         _creationFeeToken = IERC20(creationFeeToken_);
 
-        _tokenIpCollection = new SpotlightTokenIPCollection(msg.sender, address(this));
-        _tokenIpCollectionAddress = address(_tokenIpCollection);
-
         _storyDerivativeWorkflowsAddress = storyDerivativeWorkflows_;
         _storyDerivativeWorkflows = IStoryDerivativeWorkflows(storyDerivativeWorkflows_);
     }

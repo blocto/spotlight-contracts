@@ -14,10 +14,7 @@ contract SpotlightTokenIPCollection is Ownable, ERC721, ISpotlightTokenIPCollect
     string private _tokenURI =
         "https://blocto.mypinata.cloud/ipfs/bafkreibqge4t7rsppnarffvrzlfph5rk5ajvupa4oyk4v2h3ieqccty4ye";
 
-    constructor(address owner_, address tokenFactory_)
-        Ownable(owner_)
-        ERC721("Spotlight Meme IP", "Spotlight Meme IP")
-    {
+    constructor(address tokenFactory_) Ownable(msg.sender) ERC721("Spotlight Meme IP", "Spotlight Meme IP") {
         _tokenFactory = tokenFactory_;
     }
 

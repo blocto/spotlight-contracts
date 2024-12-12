@@ -30,11 +30,6 @@ contract SpotlightTokenFactoryTest is Test {
         assertEq(_factory.createTokenFee(), DEFAULT_CREATION_FEE);
         assertEq(_factory.feeToken(), DEFAULT_CREATION_FEE_TOKEN);
         assertEq(_factory.storyDerivativeWorkflows(), STORY_DERIVATIVE_WORKFLOWS_ADDRESS);
-
-        address tokenIpCollectionAddress = _factory.tokenIpCollection();
-        SpotlightTokenIPCollection tokenIpCollection = SpotlightTokenIPCollection(tokenIpCollectionAddress);
-        assertEq(tokenIpCollection.owner(), _factoryOwner);
-        assertEq(tokenIpCollection.tokenFactory(), _factoryAddress);
     }
 
     function testNotOwnerSetTokenIpCollection() public {
@@ -47,12 +42,14 @@ contract SpotlightTokenFactoryTest is Test {
     }
 
     function testSetTokneIpCollection() public {
-        address newTokenIpCollection = makeAddr("newTokenIpCollection");
-
         vm.startPrank(_factoryOwner);
-        _factory.setTokenIpCollection(newTokenIpCollection);
+        SpotlightTokenIPCollection tokenIpCollection = new SpotlightTokenIPCollection(_factoryAddress);
+        address tokenIpCollectionAddress = address(tokenIpCollection);
+        _factory.setTokenIpCollection(tokenIpCollectionAddress);
         vm.stopPrank();
-        assertEq(_factory.tokenIpCollection(), newTokenIpCollection);
+        assertEq(_factory.tokenIpCollection(), tokenIpCollectionAddress);
+        assertEq(tokenIpCollection.owner(), _factoryOwner);
+        assertEq(tokenIpCollection.tokenFactory(), _factoryAddress);
     }
 
     function testNotOwnerSetCreationFee() public {
