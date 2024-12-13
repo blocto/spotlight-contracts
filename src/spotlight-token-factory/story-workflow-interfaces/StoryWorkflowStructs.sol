@@ -30,14 +30,10 @@ library StoryWorkflowStructs {
     /// @param licenseTemplate The address of the license template to be used for the linking.
     /// @param licenseTermsIds The IDs of the license terms to be used for the linking.
     /// @param royaltyContext The context for royalty module, should be empty for Royalty Policy LAP.
-    /// @param maxMintingFee The maximum minting fee that the caller is willing to pay. if set to 0 then no limit.
-    /// @param maxRts The maximum number of royalty tokens that can be distributed to the external royalty policies.
     struct MakeDerivative {
         address[] parentIpIds;
         address licenseTemplate;
         uint256[] licenseTermsIds;
         bytes royaltyContext;
-        uint256 maxMintingFee;
-        uint32 maxRts;
     }
 }
