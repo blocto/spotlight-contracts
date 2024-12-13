@@ -28,18 +28,21 @@ interface ISpotlightToken {
     /**
      * @dev The number of tokens that can be bought from a given amount of USDC during bonding curve phase.
      * @notice The decimals of USDC is 6.
+     * @notice The quote is considered with the protocol trading fee.
      */
-    function getUSDCBuyQuote(uint256 usdcOrderSize) external view returns (uint256);
+    function getUSDCBuyQuote(uint256 usdcOrderSize) external view returns (uint256 tokensOut);
 
     /**
      * @dev The amount of USDC needed to buy a given number of tokens during bonding curve phase.
      * @notice The decimals of USDC is 6.
+     * @notice The quote is considered with the protocol trading fee.
      */
-    function getTokenBuyQuote(uint256 tokenOrderSize) external view returns (uint256);
+    function getTokenBuyQuote(uint256 tokenOrderSize) external view returns (uint256 usdcIn);
 
     /**
      * @dev The amount of USDC that can be received for selling a given number of tokens during bonding curve phase.
      * @notice The decimals of USDC is 6.
+     * @notice The quote is considered with the protocol trading fee.
      */
-    function getTokenSellQuote(uint256 tokenOrderSize) external view returns (uint256);
+    function getTokenSellQuote(uint256 tokenOrderSize) external view returns (uint256 usdcOut);
 }

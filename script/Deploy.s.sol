@@ -5,6 +5,7 @@ import "../lib/forge-std/src/Script.sol";
 import {SpotlightTokenFaucet} from "../src/spotlight-token-faucet/SpotlightTokenFaucet.sol";
 import {SpotlightTokenFactory} from "../src/spotlight-token-factory/SpotlightTokenFactory.sol";
 import {SpotlightTokenIPCollection} from "../src/spotlight-token-collection/SpotlightTokenIPCollection.sol";
+import {SpotlightUSDCBondingCurve} from "../src/spotlight-bonding-curve/SpotlightUSDCBondingCurve.sol";
 
 contract Deploy is Script {
     /**
@@ -27,10 +28,15 @@ contract Deploy is Script {
 
     function run() public {
         vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
-        new SpotlightTokenFaucet(_SUSDCTokenAddr);
-        SpotlightTokenFactory factory = new SpotlightTokenFactory(0, address(0), _STORY_DERIVATIVE_WORKFLOWS_ADDRESS);
-        SpotlightTokenIPCollection tokenIpCollection = new SpotlightTokenIPCollection(address(factory));
-        factory.setTokenIpCollection(address(tokenIpCollection));
+        // new SpotlightTokenFaucet(_SUSDCTokenAddr);
+        // SpotlightTokenFactory factory = new SpotlightTokenFactory(0, address(0), _STORY_DERIVATIVE_WORKFLOWS_ADDRESS);
+        // SpotlightTokenIPCollection tokenIpCollection = new SpotlightTokenIPCollection(address(factory));
+        // factory.setTokenIpCollection(address(tokenIpCollection));
+
+        new SpotlightUSDCBondingCurve(
+            6_900_000_000_000, // A=6.9*10^-6
+            2_878_200_000 // B=2.8782×10^−9
+        );
         vm.stopBroadcast();
     }
 }
