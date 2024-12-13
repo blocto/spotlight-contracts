@@ -7,7 +7,7 @@ import {ISpotlightBondingCurve} from "./ISpotlightBondingCurve.sol";
 /**
  * @dev Use USDC as base token.
  */
-contract SpotlightUSDCBondingCureve is ISpotlightBondingCurve {
+contract SpotlightUSDCBondingCurve is ISpotlightBondingCurve {
     using FixedPointMathLib for uint256;
     using FixedPointMathLib for int256;
 
