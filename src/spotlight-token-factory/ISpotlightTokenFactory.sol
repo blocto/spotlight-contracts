@@ -13,6 +13,7 @@ interface ISpotlightTokenFactory {
         string tokenName;
         string tokenSymbol;
         address predeployedTokenAddress;
+        uint256 tokenIpNFTId;
     }
 
     /*

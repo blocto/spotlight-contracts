@@ -47,7 +47,6 @@ interface ISpotlightTokenIPCollection {
 
     /**
      * @dev Mints a new token and assigns it to the specified address.
-     * @return The token ID of the newly minted token.
      */
-    function mint(address to) external returns (uint256);
+    function mint(address to, uint256 tokenId) external;
 }
