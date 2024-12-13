@@ -93,17 +93,18 @@ contract SpotlightTokenIPCollectionTest is Test {
         address receiver = makeAddr("receiver");
         vm.startPrank(receiver);
         vm.expectRevert("SpotlightTokenCollection: mint is disabled");
-        _tokenIpCollection.mint(receiver);
+        _tokenIpCollection.mint(receiver, 0);
         vm.stopPrank();
     }
 
     function testUserMint() public {
         address receiver = makeAddr("receiver");
         uint256 totalSupplyBefore = _tokenIpCollection.totalSupply();
+        uint256 tokenId = 0;
 
         _enableMint();
         vm.startPrank(receiver);
-        uint256 tokenId = _tokenIpCollection.mint(receiver);
+        _tokenIpCollection.mint(receiver, tokenId);
         vm.stopPrank();
 
         assertEq(_tokenIpCollection.totalSupply(), totalSupplyBefore + 1);
@@ -113,8 +114,10 @@ contract SpotlightTokenIPCollectionTest is Test {
 
     function testTokenFactoryMint() public {
         address receiver = makeAddr("receiver");
+        uint256 tokenId = 0;
+
         uint256 totalSupplyBefore = _tokenIpCollection.totalSupply();
-        uint256 tokenId = _mint(_tokenFactoryAddr, receiver);
+        _mint(_tokenFactoryAddr, receiver, tokenId);
 
         assertEq(_tokenIpCollection.totalSupply(), totalSupplyBefore + 1);
         assertEq(_tokenIpCollection.ownerOf(tokenId), receiver);
@@ -123,17 +126,33 @@ contract SpotlightTokenIPCollectionTest is Test {
 
     function testOwnerMint() public {
         address receiver = makeAddr("receiver");
+        uint256 tokenId = 0;
+
         uint256 totalSupplyBefore = _tokenIpCollection.totalSupply();
-        uint256 tokenId = _mint(_owner, receiver);
+        _mint(_owner, receiver, tokenId);
 
         assertEq(_tokenIpCollection.totalSupply(), totalSupplyBefore + 1);
         assertEq(_tokenIpCollection.ownerOf(tokenId), receiver);
         assertEq(_tokenIpCollection.tokenURI(tokenId), originalTokenURI);
     }
 
+    function testMintWithExistingTokenId() public {
+        address receiver = makeAddr("receiver");
+        uint256 tokenId = 0;
+
+        _enableMint();
+        _mint(_tokenFactoryAddr, receiver, tokenId);
+
+        vm.startPrank(receiver);
+        vm.expectRevert("SpotlightTokenCollection: token already minted");
+        _tokenIpCollection.mint(receiver, tokenId);
+        vm.stopPrank();
+    }
+
     function testSetTokenURI() public {
         address receiver = makeAddr("receiver");
-        uint256 tokenId = _mint(_owner, receiver);
+        uint256 tokenId = 0;
+        _mint(_owner, receiver, tokenId);
 
         vm.startPrank(_owner);
         _tokenIpCollection.setTokenURI(newTokenURI);
@@ -145,7 +164,8 @@ contract SpotlightTokenIPCollectionTest is Test {
     function testUserTransferFromBeforeEnabled() public {
         address sender = makeAddr("sender");
         address receiver = makeAddr("receiver");
-        uint256 tokenId = _mint(_tokenFactoryAddr, sender);
+        uint256 tokenId = 0;
+        _mint(_tokenFactoryAddr, sender, tokenId);
 
         vm.startPrank(sender);
         vm.expectRevert("SpotlightTokenCollection: transfer is disabled");
@@ -156,7 +176,8 @@ contract SpotlightTokenIPCollectionTest is Test {
     function testUserSafeTransferFromBeforeEnabled() public {
         address sender = makeAddr("sender");
         address receiver = makeAddr("receiver");
-        uint256 tokenId = _mint(_tokenFactoryAddr, sender);
+        uint256 tokenId = 0;
+        _mint(_tokenFactoryAddr, sender, tokenId);
 
         vm.startPrank(sender);
         vm.expectRevert("SpotlightTokenCollection: transfer is disabled");
@@ -167,7 +188,8 @@ contract SpotlightTokenIPCollectionTest is Test {
     function testUserSafeTransferFromWithDataBeforeEnabled() public {
         address sender = makeAddr("sender");
         address receiver = makeAddr("receiver");
-        uint256 tokenId = _mint(_tokenFactoryAddr, sender);
+        uint256 tokenId = 0;
+        _mint(_tokenFactoryAddr, sender, tokenId);
 
         vm.startPrank(sender);
         vm.expectRevert("SpotlightTokenCollection: transfer is disabled");
@@ -178,8 +200,9 @@ contract SpotlightTokenIPCollectionTest is Test {
     function testUserTransferFrom() public {
         address sender = makeAddr("sender");
         address receiver = makeAddr("receiver");
+        uint256 tokenId = 0;
 
-        uint256 tokenId = _mint(_tokenFactoryAddr, sender);
+        _mint(_tokenFactoryAddr, sender, tokenId);
         _enableTransfer();
 
         vm.startPrank(sender);
@@ -191,8 +214,8 @@ contract SpotlightTokenIPCollectionTest is Test {
     function testUserSafeTransferFrom() public {
         address sender = makeAddr("sender");
         address receiver = makeAddr("receiver");
-
-        uint256 tokenId = _mint(_tokenFactoryAddr, sender);
+        uint256 tokenId = 0;
+        _mint(_tokenFactoryAddr, sender, tokenId);
         _enableTransfer();
 
         vm.startPrank(sender);
@@ -204,8 +227,8 @@ contract SpotlightTokenIPCollectionTest is Test {
     function testUserSafeTransferFromWithData() public {
         address sender = makeAddr("sender");
         address receiver = makeAddr("receiver");
-
-        uint256 tokenId = _mint(_tokenFactoryAddr, sender);
+        uint256 tokenId = 0;
+        _mint(_tokenFactoryAddr, sender, tokenId);
         _enableTransfer();
 
         vm.startPrank(sender);
@@ -216,7 +239,8 @@ contract SpotlightTokenIPCollectionTest is Test {
 
     function testTokenFactoryTransferFrom() public {
         address receiver = makeAddr("receiver");
-        uint256 tokenId = _mint(_tokenFactoryAddr, _tokenFactoryAddr);
+        uint256 tokenId = 0;
+        _mint(_tokenFactoryAddr, _tokenFactoryAddr, tokenId);
 
         vm.startPrank(_tokenFactoryAddr);
         _tokenIpCollection.transferFrom(_tokenFactoryAddr, receiver, tokenId);
@@ -226,7 +250,8 @@ contract SpotlightTokenIPCollectionTest is Test {
 
     function testTokenFactorySafeTransferFrom() public {
         address receiver = makeAddr("receiver");
-        uint256 tokenId = _mint(_tokenFactoryAddr, _tokenFactoryAddr);
+        uint256 tokenId = 0;
+        _mint(_tokenFactoryAddr, _tokenFactoryAddr, tokenId);
 
         vm.startPrank(_tokenFactoryAddr);
         _tokenIpCollection.safeTransferFrom(_tokenFactoryAddr, receiver, tokenId);
@@ -236,7 +261,8 @@ contract SpotlightTokenIPCollectionTest is Test {
 
     function testTokenFactorySafeTransferFromWithData() public {
         address receiver = makeAddr("receiver");
-        uint256 tokenId = _mint(_tokenFactoryAddr, _tokenFactoryAddr);
+        uint256 tokenId = 0;
+        _mint(_tokenFactoryAddr, _tokenFactoryAddr, tokenId);
 
         vm.startPrank(_tokenFactoryAddr);
         _tokenIpCollection.safeTransferFrom(_tokenFactoryAddr, receiver, tokenId, "0x");
@@ -246,7 +272,8 @@ contract SpotlightTokenIPCollectionTest is Test {
 
     function testOwnerTransferFrom() public {
         address receiver = makeAddr("receiver");
-        uint256 tokenId = _mint(_owner, _owner);
+        uint256 tokenId = 0;
+        _mint(_owner, _owner, tokenId);
 
         vm.startPrank(_owner);
         _tokenIpCollection.transferFrom(_owner, receiver, tokenId);
@@ -256,7 +283,8 @@ contract SpotlightTokenIPCollectionTest is Test {
 
     function testOwnerSafeTransferFrom() public {
         address receiver = makeAddr("receiver");
-        uint256 tokenId = _mint(_owner, _owner);
+        uint256 tokenId = 0;
+        _mint(_owner, _owner, tokenId);
 
         vm.startPrank(_owner);
         _tokenIpCollection.safeTransferFrom(_owner, receiver, tokenId);
@@ -266,7 +294,8 @@ contract SpotlightTokenIPCollectionTest is Test {
 
     function testOwnerSafeTransferFromWithData() public {
         address receiver = makeAddr("receiver");
-        uint256 tokenId = _mint(_owner, _owner);
+        uint256 tokenId = 0;
+        _mint(_owner, _owner, tokenId);
 
         vm.startPrank(_owner);
         _tokenIpCollection.safeTransferFrom(_owner, receiver, tokenId, "0x");
@@ -299,9 +328,9 @@ contract SpotlightTokenIPCollectionTest is Test {
         vm.stopPrank();
     }
 
-    function _mint(address minter, address receiver) private returns (uint256 tokenId) {
+    function _mint(address minter, address receiver, uint256 tokenId) private {
         vm.startPrank(minter);
-        tokenId = _tokenIpCollection.mint(receiver);
+        _tokenIpCollection.mint(receiver, tokenId);
         vm.stopPrank();
     }
 }

@@ -6,11 +6,10 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ISpotlightTokenIPCollection} from "./ISpotlightTokenIPCollection.sol";
 
 contract SpotlightTokenIPCollection is Ownable, ERC721, ISpotlightTokenIPCollection {
+    uint256 private _totalSupply;
     bool private _isTransferEnabled = false;
     bool private _isMintEnabled = false;
     address private _tokenFactory;
-
-    uint256 private _nextTokenId;
     string private _tokenURI =
         "https://blocto.mypinata.cloud/ipfs/bafkreibqge4t7rsppnarffvrzlfph5rk5ajvupa4oyk4v2h3ieqccty4ye";
 
@@ -32,7 +31,7 @@ contract SpotlightTokenIPCollection is Ownable, ERC721, ISpotlightTokenIPCollect
      * @dev See {ISpotlightTokenCollection-totalSupply}.
      */
     function totalSupply() external view returns (uint256) {
-        return _nextTokenId;
+        return _totalSupply;
     }
 
     /**
@@ -100,11 +99,12 @@ contract SpotlightTokenIPCollection is Ownable, ERC721, ISpotlightTokenIPCollect
      * @dev See {ISpotlightTokenCollection-mint}.
      * @notice onlyOwner or tokenFactory
      */
-    function mint(address to) public onlyMintEnabled returns (uint256) {
-        uint256 tokenId = _nextTokenId;
+    function mint(address to, uint256 tokenId) public onlyMintEnabled {
+        if (_ownerOf(tokenId) != address(0)) {
+            revert("SpotlightTokenCollection: token already minted");
+        }
+        _totalSupply += 1;
         _mint(to, tokenId);
-        _nextTokenId = _nextTokenId + 1;
-        return tokenId;
     }
 
     /**
