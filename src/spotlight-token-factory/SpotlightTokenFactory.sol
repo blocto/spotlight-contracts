@@ -74,7 +74,7 @@ contract SpotlightTokenFactory is Ownable, ISpotlightTokenFactory {
         returns (address)
     {
         bytes memory bytecode = _tokenCreateBytecode(tokenCreator, tokenName, tokenSymbol);
-        bytes32 salt = _slat(tokenCreator);
+        bytes32 salt = _salt(tokenCreator);
         bytes32 calculatedHash = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(bytecode)));
 
         return address(uint160(uint256(calculatedHash)));
@@ -88,7 +88,7 @@ contract SpotlightTokenFactory is Ownable, ISpotlightTokenFactory {
         StoryWorkflowStructs.SignatureData calldata sigMetadata,
         StoryWorkflowStructs.SignatureData calldata sigRegister
     ) external returns (address tokenAddress, address ipId) {
-        tokenAddress = _deplySpotlightToken(tokenCreationData, msg.sender);
+        tokenAddress = _deploySpotlightToken(tokenCreationData, msg.sender);
 
         uint256 tokenIpNFTId = _tokenIpCollection.mint(address(this));
 
@@ -138,15 +138,15 @@ contract SpotlightTokenFactory is Ownable, ISpotlightTokenFactory {
         return bytecode;
     }
 
-    function _slat(address account) internal view returns (bytes32) {
+    function _salt(address account) internal view returns (bytes32) {
         return bytes32(numberOfTokensCreated(account));
     }
 
-    function _deplySpotlightToken(TokenCreationData memory tokenCreationData, address creator)
+    function _deploySpotlightToken(TokenCreationData memory tokenCreationData, address creator)
         internal
         returns (address)
     {
-        SpotlightToken token = new SpotlightToken{salt: _slat(creator)}(
+        SpotlightToken token = new SpotlightToken{salt: _salt(creator)}(
             address(this), msg.sender, tokenCreationData.tokenName, tokenCreationData.tokenSymbol
         );
         address tokenAddress = address(token);
