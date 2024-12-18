@@ -11,6 +11,14 @@ import {ISpotlightBondingCurve} from "../spotlight-bonding-curve/ISpotlightBondi
 contract SpotlightToken is Ownable, InitializableERC20, ISpotlightToken, SpotlightTokenStorage {
     constructor() InitializableERC20() Ownable(msg.sender) {}
 
+    modifier needInitialized() {
+        _checkIsInitialized();
+        _;
+    }
+
+    /*
+     * @dev See {ISpotlightToken-initialize}.
+     */
     function initialize(
         address tokenCreator_,
         address bondingCurve_,
@@ -29,31 +37,44 @@ contract SpotlightToken is Ownable, InitializableERC20, ISpotlightToken, Spotlig
         _isInitialized = true;
     }
 
-    modifier needInitialized() {
-        _checkIsInitialized();
-        _;
-    }
-
+    /*
+     * @dev See {ISpotlightToken-isInitialized}.
+     */
     function isInitialized() public view returns (bool) {
         return _isInitialized;
     }
 
+    /*
+     * @dev See {ISpotlightToken-tokenCreator}.
+     */
     function tokenCreator() public view returns (address) {
         return _tokenCreator;
     }
 
+    /*
+     * @dev See {ISpotlightToken-baseToken}.
+     */
     function protocolFeeRecipient() public view returns (address) {
         return _protocolFeeRecipient;
     }
 
+    /*
+     * @dev See {ISpotlightToken-setProtocolFeeRecipient}.
+     */
     function setProtocolFeeRecipient(address newRecipient) external onlyOwner {
         _protocolFeeRecipient = newRecipient;
     }
 
+    /*
+     * @dev See {ISpotlightToken-bondingCurve}.
+     */
     function bondingCurve() public view returns (address) {
         return _bondingCurve;
     }
 
+    /*
+     * @dev See {ISpotlightToken-setBondingCurve}.
+     */
     function buyWithUSDC(uint256 usdcAmount, address recipient, uint256 minTokenOut) external needInitialized {
         uint256 usdcIn;
         uint256 tokenOut;
@@ -66,28 +87,33 @@ contract SpotlightToken is Ownable, InitializableERC20, ISpotlightToken, Spotlig
             revert("SpotlightToken: Min order size not met");
         }
 
-        uint256 quotedTokenOut = getUSDCBuyQuote(usdcOrderSize);
+        uint256 tokenOutQuote = getUSDCBuyQuote(usdcOrderSize);
 
-        if (quotedTokenOut < minTokenOut) {
+        if (tokenOutQuote < minTokenOut) {
             revert("SpotlightToken: Slippage limit exceeded");
         }
 
         uint256 maxRemainingToken = BONDIGN_CURVE_SUPPLY - totalSupply();
-        if (quotedTokenOut > maxRemainingToken) {
+        if (tokenOutQuote > maxRemainingToken) {
             usdcIn = getTokenBuyQuote(maxRemainingToken);
             tokenOut = maxRemainingToken;
             tradingFee = (usdcIn * PROTOCOL_TRADING_FEE_PCT) / 100;
         } else {
             usdcIn = usdcOrderSize;
-            tokenOut = quotedTokenOut;
+            tokenOut = tokenOutQuote;
         }
 
-        IERC20(_baseToken).transferFrom(msg.sender, address(this), usdcIn);
-        IERC20(_baseToken).transferFrom(msg.sender, _protocolFeeRecipient, tradingFee);
-        _mint(recipient, tokenOut);
+        _buy(msg.sender, recipient, usdcIn, tokenOut, tradingFee);
     }
 
+    /*
+     * @dev See {ISpotlightToken-buyToken}.
+     */
     function buyToken(uint256 tokenAmount, address recipient, uint256 maxUSDCIn) external needInitialized {
+        if (getTokenBuyQuoteWithFee(tokenAmount) > maxUSDCIn) {
+            revert("SpotlightToken: Slippage limit exceeded");
+        }
+
         uint256 usdcIn;
         uint256 tokenOut;
         uint256 tradingFee;
@@ -103,17 +129,14 @@ contract SpotlightToken is Ownable, InitializableERC20, ISpotlightToken, Spotlig
         if (usdcIn < MIN_USDC_ORDER_SIZE) {
             revert("SpotlightToken: Min order size not met");
         }
-
         tradingFee = (usdcIn * PROTOCOL_TRADING_FEE_PCT) / 100;
-        if ((usdcIn + tradingFee) > maxUSDCIn) {
-            revert("SpotlightToken: Max USDC in exceeded");
-        }
 
-        IERC20(_baseToken).transferFrom(msg.sender, address(this), usdcIn);
-        IERC20(_baseToken).transferFrom(msg.sender, _protocolFeeRecipient, tradingFee);
-        _mint(recipient, tokenOut);
+        _buy(msg.sender, recipient, usdcIn, tokenOut, tradingFee);
     }
 
+    /*
+     * @dev See {ISpotlightToken-sellToken}.
+     */
     function sellToken(uint256 tokenAmount, address recipient, uint256 minUSDCOut) external needInitialized {
         if (tokenAmount > balanceOf(msg.sender)) {
             revert("SpotlightToken: Insufficient balance");
@@ -123,50 +146,86 @@ contract SpotlightToken is Ownable, InitializableERC20, ISpotlightToken, Spotlig
         uint256 usdcOut;
         uint256 tradingFee;
 
-        uint256 quotedUSDCOut = getTokenSellQuote(tokenIn);
-        if (quotedUSDCOut < MIN_USDC_ORDER_SIZE) {
+        uint256 usdcOutQuote = getTokenSellQuote(tokenIn);
+        if (usdcOutQuote < MIN_USDC_ORDER_SIZE) {
             revert("SpotlightToken: Min order size not met");
         }
         tradingFee = (usdcOut * PROTOCOL_TRADING_FEE_PCT) / 100;
-        usdcOut = quotedUSDCOut - tradingFee;
+        usdcOut = usdcOutQuote - tradingFee;
         if (usdcOut < minUSDCOut) {
             revert("SpotlightToken: Slippage limit exceeded");
         }
 
-        _burn(msg.sender, tokenIn);
-        IERC20(_baseToken).transfer(_protocolFeeRecipient, tradingFee);
-        IERC20(_baseToken).transfer(recipient, usdcOut);
+        _sell(msg.sender, recipient, usdcOut, tokenIn, tradingFee);
     }
 
+    /*
+     * @dev See {ISpotlightToken-getUSDCBuyQuote}.
+     */
     function getUSDCBuyQuote(uint256 usdcOrderSize) public view needInitialized returns (uint256 tokensOut) {
         tokensOut = ISpotlightBondingCurve(_bondingCurve).getBaseTokenBuyQuote(totalSupply(), usdcOrderSize);
     }
 
+    /*
+     * @dev See {ISpotlightToken-getTokenBuyQuote}.
+     */
     function getTokenBuyQuote(uint256 tokenOrderSize) public view needInitialized returns (uint256 usdcIn) {
         usdcIn = ISpotlightBondingCurve(_bondingCurve).getTargetTokenBuyQuote(totalSupply(), tokenOrderSize);
     }
 
+    /*
+     * @dev See {ISpotlightToken-getTokenSellQuote}.
+     */
     function getTokenSellQuote(uint256 tokenOrderSize) public view needInitialized returns (uint256 usdcOut) {
         usdcOut = ISpotlightBondingCurve(_bondingCurve).getTargetTokenSellQuote(totalSupply(), tokenOrderSize);
     }
 
+    /*
+     * @dev See {ISpotlightToken-getUSDCBuyQuoteWithFee}.
+     */
     function getUSDCBuyQuoteWithFee(uint256 usdcOrderSize) public view needInitialized returns (uint256 tokensOut) {
-        uint256 realUSDCOrderSize = (usdcOrderSize * (100 - PROTOCOL_TRADING_FEE_PCT)) / 100;
+        uint256 tradingFee = (usdcOrderSize * PROTOCOL_TRADING_FEE_PCT) / 100;
+        uint256 realUSDCOrderSize = usdcOrderSize - tradingFee;
         tokensOut = ISpotlightBondingCurve(_bondingCurve).getBaseTokenBuyQuote(totalSupply(), realUSDCOrderSize);
     }
 
+    /*
+     * @dev See {ISpotlightToken-getTokenBuyQuoteWithFee}.
+     */
     function getTokenBuyQuoteWithFee(uint256 tokenOrderSize) public view needInitialized returns (uint256 usdcIn) {
         uint256 usdcNeeded = ISpotlightBondingCurve(_bondingCurve).getTargetTokenBuyQuote(totalSupply(), tokenOrderSize);
-        usdcIn = (usdcNeeded * 100) / (100 - PROTOCOL_TRADING_FEE_PCT);
+        uint256 tradingFee = (usdcNeeded * PROTOCOL_TRADING_FEE_PCT) / 100;
+        usdcIn = usdcNeeded + tradingFee;
     }
 
+    /*
+     * @dev See {ISpotlightToken-getTokenSellQuoteWithFee}.
+     */
     function getTokenSellQuoteWithFee(uint256 tokenOrderSize) public view needInitialized returns (uint256 usdcOut) {
         uint256 usdcFromTrading =
             ISpotlightBondingCurve(_bondingCurve).getTargetTokenSellQuote(totalSupply(), tokenOrderSize);
-        usdcOut = (usdcFromTrading * (100 - PROTOCOL_TRADING_FEE_PCT)) / 100;
+        uint256 tradingFee = (usdcFromTrading * PROTOCOL_TRADING_FEE_PCT) / 100;
+        usdcOut = usdcFromTrading - tradingFee;
     }
 
+    // @dev Private functions
     function _checkIsInitialized() internal view {
         require(_isInitialized, "SpotlightToken: Not initialized");
+    }
+
+    function _buy(address buyer, address recipient, uint256 usdcIn, uint256 tokenOut, uint256 tradingFee) internal {
+        IERC20(_baseToken).transferFrom(buyer, address(this), usdcIn);
+        IERC20(_baseToken).transferFrom(buyer, _protocolFeeRecipient, tradingFee);
+        _mint(recipient, tokenOut);
+
+        emit SpotlightTokenBought(buyer, recipient, usdcIn + tradingFee, tradingFee, usdcIn, tokenOut, totalSupply());
+    }
+
+    function _sell(address seller, address recipient, uint256 usdcOut, uint256 tokenIn, uint256 tradingFee) internal {
+        _burn(seller, tokenIn);
+        IERC20(_baseToken).transfer(_protocolFeeRecipient, tradingFee);
+        IERC20(_baseToken).transfer(recipient, usdcOut);
+
+        emit SpotlightTokenSold(seller, recipient, usdcOut - tradingFee, tradingFee, usdcOut, tokenIn, totalSupply());
     }
 }
