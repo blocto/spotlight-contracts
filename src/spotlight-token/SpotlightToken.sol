@@ -39,6 +39,10 @@ contract SpotlightToken is Ownable, InitializableERC20, ISpotlightToken, Spotlig
         _tokenSymbol = tokenSymbol_;
     }
 
+    function isInitialized() public view returns (bool) {
+        return _isInitialized;
+    }
+
     function tokenCreator() public view returns (address) {
         return _tokenCreator;
     }
