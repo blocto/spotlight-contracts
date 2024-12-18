@@ -29,14 +29,14 @@ contract Deploy is Script {
     function run() public {
         vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
         // new SpotlightTokenFaucet(_SUSDCTokenAddr);
-        // SpotlightTokenFactory factory = new SpotlightTokenFactory(0, address(0), _STORY_DERIVATIVE_WORKFLOWS_ADDRESS);
+        SpotlightTokenFactory factory = new SpotlightTokenFactory(0, address(0), _STORY_DERIVATIVE_WORKFLOWS_ADDRESS);
         // SpotlightTokenIPCollection tokenIpCollection = new SpotlightTokenIPCollection(address(factory));
         // factory.setTokenIpCollection(address(tokenIpCollection));
 
-        new SpotlightUSDCBondingCurve(
-            6_900_000_000_000, // A=6.9*10^-6
-            2_878_200_000 // B=2.8782×10^−9
-        );
+        // new SpotlightUSDCBondingCurve(
+        //     6_900_000_000_000, // A=6.9*10^-6
+        //     2_878_200_000 // B=2.8782×10^−9
+        // );
         vm.stopBroadcast();
     }
 }

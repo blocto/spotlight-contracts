@@ -90,13 +90,11 @@ contract SpotlightTokenFactory is Ownable, ISpotlightTokenFactory {
     ) external returns (address tokenAddress, address ipId) {
         tokenAddress = _deploySpotlightToken(tokenCreationData, msg.sender);
 
-        _tokenIpCollection.mint(address(this), tokenCreationData.tokenIpNFTId);
+        _tokenIpCollection.mint(msg.sender, tokenCreationData.tokenIpNFTId);
 
         ipId = _storyDerivativeWorkflows.registerIpAndMakeDerivative(
             tokenIpCollection(), tokenCreationData.tokenIpNFTId, derivData, ipMetadata, sigMetadata, sigRegister
         );
-
-        _tokenIpCollection.transferFrom(address(this), msg.sender, tokenCreationData.tokenIpNFTId);
 
         _initalBuy(msg.sender, initialBuyData);
         _chargeCreationFee(msg.sender);
