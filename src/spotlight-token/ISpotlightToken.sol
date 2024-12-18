@@ -92,7 +92,7 @@ interface ISpotlightToken {
      * @param recipient The address that will receive the purchased tokens.
      * @param maxUSDCIn The maximum amount of USDC the caller is willing to spend. Please note that the trading fee is included in this amount.
      */
-    function buyTokne(uint256 tokenAmount, address recipient, uint256 maxUSDCIn) external;
+    function buyToken(uint256 tokenAmount, address recipient, uint256 maxUSDCIn) external;
 
     /**
      * @dev Sells tokens for USDC.
@@ -103,7 +103,7 @@ interface ISpotlightToken {
      * @param recipient The address that will receive the USDC proceeds.
      * @param minUSDCOut The minimum amount of USDC to receive for the transaction to succeed. Please note that the trading fee is included in this amount.
      */
-    function sellTokne(uint256 tokenAmount, address recipient, uint256 minUSDCOut) external;
+    function sellToken(uint256 tokenAmount, address recipient, uint256 minUSDCOut) external;
 
     /**
      * @dev The number of tokens that can be bought from a given amount of USDC during bonding curve phase.
