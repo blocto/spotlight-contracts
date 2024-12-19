@@ -26,13 +26,10 @@ contract Deploy is Script {
     */
 
     //@notice The address of the SUSDCToken contract on Odyssey.(https://odyssey.storyscan.xyz/address/0x40fCa9cB1AB15eD9B5bDA19A52ac00A78AE08e1D?tab=contract)
-    address private _SUSDCTokenAddr =
-        0x40fCa9cB1AB15eD9B5bDA19A52ac00A78AE08e1D;
-    address private _STORY_DERIVATIVE_WORKFLOWS_ADDRESS =
-        0xa8815CEB96857FFb8f5F8ce920b1Ae6D70254C7B;
+    address private _SUSDCTokenAddr = 0x40fCa9cB1AB15eD9B5bDA19A52ac00A78AE08e1D;
+    address private _STORY_DERIVATIVE_WORKFLOWS_ADDRESS = 0xa8815CEB96857FFb8f5F8ce920b1Ae6D70254C7B;
 
-    address private _SPOTLIGHT_TOKEN_FACTORY_OWNER =
-        0x582d6944a8EA7e4ACD385D18DC95CF5915510289;
+    address private _SPOTLIGHT_TOKEN_FACTORY_OWNER = 0x582d6944a8EA7e4ACD385D18DC95CF5915510289;
 
     function run() public {
         vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
@@ -72,9 +69,7 @@ contract Deploy is Script {
         // );
 
         // @dev deploy spotlight token factory proxy contract
-        BeaconProxy beaconProxy = new BeaconProxy(
-            0x0e080cF41caEd4C3d29404798AbDca1c1c34b4f3
-        );
+        BeaconProxy beaconProxy = new BeaconProxy(0x0e080cF41caEd4C3d29404798AbDca1c1c34b4f3);
         vm.stopBroadcast();
     }
 }

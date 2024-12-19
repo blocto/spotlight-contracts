@@ -14,124 +14,146 @@ import {SpotlightTokenFactoryStorage} from "./SpotlightTokenFactoryStorage.sol";
 import {ISpotlightBondingCurve} from "../spotlight-bonding-curve/ISpotlightBondingCurve.sol";
 
 contract SpotlightTokenFactory is BeaconProxyStorage, Ownable, SpotlightTokenFactoryStorage, ISpotlightTokenFactory {
-    constructor(
+    constructor() Ownable(msg.sender) {}
+
+    modifier needInitialized() {
+        _checkIsInitialized();
+        _;
+    }
+
+    /**
+     * @dev See {ISpotlightTokenFactory-isInitialized}.
+     */
+    function isInitialized() public view returns (bool) {
+        return _isInitialized;
+    }
+
+    /**
+     * @dev See {ISpotlightTokenFactory-initialize}.
+     */
+    function initialize(
         uint256 creationFee_,
         address creationFeeToken_,
         address tokenBeacon_,
         address bondingCurve_,
         address baseToken_,
         address storyDerivativeWorkflows_
-    ) Ownable(msg.sender) {
+    ) external onlyOwner {
+        if (isInitialized()) {
+            revert("SpotlightTokenFactory: Already initialized");
+        }
         _creationFee = creationFee_;
         _creationFeeToken = creationFeeToken_;
         _tokenBeacon = tokenBeacon_;
         _bondingCurve = bondingCurve_;
         _baseToken = baseToken_;
         _storyDerivativeWorkflows = storyDerivativeWorkflows_;
+
+        _isInitialized = true;
     }
 
     /**
      * @dev See {ISpotlightTokenFactory-tokenIpCollection}.
      */
-    function tokenIpCollection() public view returns (address) {
+    function tokenIpCollection() public view needInitialized returns (address) {
         return _tokenIpCollection;
     }
 
     /**
      * @dev See {ISpotlightTokenFactory-setTokenIpCollection}.
      */
-    function setTokenIpCollection(address newTokenIpCollection) external onlyOwner {
+    function setTokenIpCollection(address newTokenIpCollection) external needInitialized onlyOwner {
         _tokenIpCollection = newTokenIpCollection;
     }
 
     /**
      * @dev See {ISpotlightTokenFactory-bondingCurve}.
      */
-    function tokenBeacon() public view returns (address) {
+    function tokenBeacon() public view needInitialized returns (address) {
         return _tokenBeacon;
     }
 
     /**
      * @dev See {ISpotlightTokenFactory-setTokenBeacon}.
      */
-    function setTokenBeacon(address newTokenBeacon) external onlyOwner {
+    function setTokenBeacon(address newTokenBeacon) external needInitialized onlyOwner {
         _tokenBeacon = newTokenBeacon;
     }
 
     /**
      * @dev See {ISpotlightTokenFactory-creationFee}.
      */
-    function createTokenFee() public view returns (uint256) {
+    function createTokenFee() public view needInitialized returns (uint256) {
         return _creationFee;
     }
 
     /**
      * @dev See {ISpotlightTokenFactory-setCreateTokenFee}.
      */
-    function setCreateTokenFee(uint256 newFee) external onlyOwner {
+    function setCreateTokenFee(uint256 newFee) external needInitialized onlyOwner {
         _creationFee = newFee;
     }
 
     /**
      * @dev See {ISpotlightTokenFactory-feeToken}.
      */
-    function feeToken() public view returns (address) {
+    function feeToken() public view needInitialized returns (address) {
         return _creationFeeToken;
     }
 
     /**
      * @dev See {ISpotlightTokenFactory-setFeeToken}.
      */
-    function setFeeToken(address newToken) external onlyOwner {
+    function setFeeToken(address newToken) external needInitialized onlyOwner {
         _creationFeeToken = newToken;
     }
 
     /**
      * @dev See {ISpotlightTokenFactory-storyDerivativeWorkflows}.
      */
-    function storyDerivativeWorkflows() public view returns (address) {
+    function storyDerivativeWorkflows() public view needInitialized returns (address) {
         return _storyDerivativeWorkflows;
     }
 
     /**
      * @dev See {ISpotlightTokenFactory-setStoryDerivativeWorkflows}.
      */
-    function setStoryDerivativeWorkflows(address newStoryDerivativeWorkflows) external onlyOwner {
+    function setStoryDerivativeWorkflows(address newStoryDerivativeWorkflows) external needInitialized onlyOwner {
         _storyDerivativeWorkflows = newStoryDerivativeWorkflows;
     }
 
     /**
      * @dev See {ISpotlightTokenFactory-baseToken}.
      */
-    function baseToken() public view returns (address) {
+    function baseToken() public view needInitialized returns (address) {
         return _baseToken;
     }
 
     /**
      * @dev See {ISpotlightTokenFactory-setBaseToken}.
      */
-    function setBaseToken(address newBaseToken) external onlyOwner {
+    function setBaseToken(address newBaseToken) external needInitialized onlyOwner {
         _baseToken = newBaseToken;
     }
 
     /**
      * @dev See {ISpotlightTokenFactory-bondingCurve}.
      */
-    function bondingCurve() public view returns (address) {
+    function bondingCurve() public view needInitialized returns (address) {
         return _bondingCurve;
     }
 
     /**
      * @dev See {ISpotlightTokenFactory-setBondingCurve}.
      */
-    function setBindingCurve(address newBondingCurve) external onlyOwner {
+    function setBindingCurve(address newBondingCurve) external needInitialized onlyOwner {
         _bondingCurve = newBondingCurve;
     }
 
     /**
      * @dev See {ISpotlightTokenFactory-calculateTokenAddress}.
      */
-    function calculateTokenAddress(address tokenCreator) external view returns (address) {
+    function calculateTokenAddress(address tokenCreator) external view needInitialized returns (address) {
         bytes memory bytecode = _tokenCreateBytecode();
         bytes32 salt = _salt(tokenCreator);
         bytes32 calculatedHash = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(bytecode)));
@@ -149,7 +171,7 @@ contract SpotlightTokenFactory is BeaconProxyStorage, Ownable, SpotlightTokenFac
         StoryWorkflowStructs.IPMetadata calldata ipMetadata,
         StoryWorkflowStructs.SignatureData calldata sigMetadata,
         StoryWorkflowStructs.SignatureData calldata sigRegister
-    ) external returns (address tokenAddress, address ipId) {
+    ) external needInitialized returns (address tokenAddress, address ipId) {
         tokenAddress = _deploySpotlightToken(tokenCreationData, msg.sender);
 
         ISpotlightTokenIPCollection(_tokenIpCollection).mint(msg.sender, tokenCreationData.tokenIpNFTId);
@@ -181,14 +203,14 @@ contract SpotlightTokenFactory is BeaconProxyStorage, Ownable, SpotlightTokenFac
     /**
      * @dev See {ISpotlightTokenFactory-getInitialBuyTokenQuote}.
      */
-    function getInitialBuyTokenQuote(uint256 tokensOut) external view returns (uint256) {
+    function getInitialBuyTokenQuote(uint256 tokensOut) external view needInitialized returns (uint256) {
         return ISpotlightBondingCurve(_bondingCurve).getTargetTokenBuyQuote(0, tokensOut);
     }
 
     /**
      * @dev See {ISpotlightTokenFactory-numberOfTokensCreated}.
      */
-    function numberOfTokensCreated(address tokenCreator) public view returns (uint256) {
+    function numberOfTokensCreated(address tokenCreator) public view needInitialized returns (uint256) {
         return _numbersOfTokensCreated[tokenCreator];
     }
 
@@ -200,6 +222,12 @@ contract SpotlightTokenFactory is BeaconProxyStorage, Ownable, SpotlightTokenFac
     }
 
     // @dev - private functions
+    function _checkIsInitialized() internal view {
+        if (!isInitialized()) {
+            revert("SpotlightTokenFactory: Not initialized");
+        }
+    }
+
     function _tokenCreateBytecode() internal view returns (bytes memory) {
         bytes memory creationCode = type(BeaconProxy).creationCode;
         bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(_tokenBeacon));

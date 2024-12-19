@@ -11,5 +11,7 @@ abstract contract SpotlightTokenFactoryStorage {
     address internal _tokenIpCollection;
     address internal _storyDerivativeWorkflows;
     mapping(address => uint256) internal _numbersOfTokensCreated;
+
+    bool internal _isInitialized;
     // @dev end of v1 properties
 }

@@ -57,6 +57,30 @@ interface ISpotlightTokenFactory {
     );
 
     /**
+     * @dev Returns if the token factory has been initialized.
+     */
+    function isInitialized() external view returns (bool);
+
+    /**
+     * @dev Initializes the token factory.
+     *
+     * @param creationFee_ The fee to create a token.
+     * @param creationFeeToken_ The address of the token used for paying the creation fee.
+     * @param tokenBeacon_ The address of the token beacon contract.
+     * @param bondingCurve_ The address of the bonding curve contract.
+     * @param baseToken_ The address of the base token.
+     * @param storyDerivativeWorkflows_ The address of the story derivative workflows contract.
+     */
+    function initialize(
+        uint256 creationFee_,
+        address creationFeeToken_,
+        address tokenBeacon_,
+        address bondingCurve_,
+        address baseToken_,
+        address storyDerivativeWorkflows_
+    ) external;
+
+    /**
      * @dev Returns the address of the token IP collection contract
      * @notice The token IP collection contract must implement ISpotlightTokenIPCollection
      */
