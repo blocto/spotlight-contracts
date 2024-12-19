@@ -117,7 +117,7 @@ contract SpotlightTokenFaucet is Ownable, ISpotlightFaucet {
             return 0;
         }
 
-        int256 remainingTime = int256(lastClaimTimestamp(account) + _waitTime - block.timestamp);
+        int256 remainingTime = int256(lastClaimTimestamp(account)) + int256(_waitTime) - int256(block.timestamp);
         if (remainingTime < 0) {
             return 0;
         } else {
