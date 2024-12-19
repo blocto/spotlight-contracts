@@ -8,6 +8,7 @@ import {SpotlightTokenIPCollection} from "../src/spotlight-token-collection/Spot
 import {SpotlightUSDCBondingCurve} from "../src/spotlight-bonding-curve/SpotlightUSDCBondingCurve.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {SpotlightToken} from "../src/spotlight-token/SpotlightToken.sol";
+import {BeaconProxy} from "../src/beacon-proxy/BeaconProxy.sol";
 
 contract Deploy is Script {
     /**
@@ -25,10 +26,13 @@ contract Deploy is Script {
     */
 
     //@notice The address of the SUSDCToken contract on Odyssey.(https://odyssey.storyscan.xyz/address/0x40fCa9cB1AB15eD9B5bDA19A52ac00A78AE08e1D?tab=contract)
-    address private _SUSDCTokenAddr = 0x40fCa9cB1AB15eD9B5bDA19A52ac00A78AE08e1D;
-    address private _STORY_DERIVATIVE_WORKFLOWS_ADDRESS = 0xa8815CEB96857FFb8f5F8ce920b1Ae6D70254C7B;
+    address private _SUSDCTokenAddr =
+        0x40fCa9cB1AB15eD9B5bDA19A52ac00A78AE08e1D;
+    address private _STORY_DERIVATIVE_WORKFLOWS_ADDRESS =
+        0xa8815CEB96857FFb8f5F8ce920b1Ae6D70254C7B;
 
-    address private _SPOTLIGHT_TOKEN_FACTORY_OWNER = 0x582d6944a8EA7e4ACD385D18DC95CF5915510289;
+    address private _SPOTLIGHT_TOKEN_FACTORY_OWNER =
+        0x582d6944a8EA7e4ACD385D18DC95CF5915510289;
 
     function run() public {
         vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
@@ -43,13 +47,34 @@ contract Deploy is Script {
         // );
 
         // @dev deploy spotlight token implementation contract
-        new SpotlightToken();
+        // SpotlightToken spotlightTokenImpl = new SpotlightToken();
 
-        // @dev deploy beacon contract
-        // new UpgradeableBeacon(
-        //     0xF3146F4abBbb84cfea2864aD9e0a0765a31Be161,
+        // @dev deploy spotlight token beacon contract
+        // UpgradeableBeacon spotlightTokenBeacon = new UpgradeableBeacon(
+        //     address(spotlightTokenImpl),
         //     _SPOTLIGHT_TOKEN_FACTORY_OWNER
         // );
+
+        // @dev deploy spotlight token factory implementation contract
+        // SpotlightTokenFactory factoryImpl = new SpotlightTokenFactory(
+        //     5_000_000, // creationFee: 5 usdc
+        //     _SUSDCTokenAddr, // creationFeeToken_
+        //     0xf23BF6DCbdf83De455d39b50ee2a9B7cFC5a4AB0, // tokenBeacon_
+        //     0x2D6f361616a6eF15305d0099434D854f98E5cFE9, // bondingCurve_
+        //     _SUSDCTokenAddr, // baseToken_
+        //     _STORY_DERIVATIVE_WORKFLOWS_ADDRESS // storyDerivativeWorkflows_
+        // );
+
+        // @dev deploy spotlight token factory beacon contract
+        // UpgradeableBeacon spotlightTokenBeacon = new UpgradeableBeacon(
+        //     0x043a1D75f6A7ACe220f3E852637422d38b39288D,
+        //     _SPOTLIGHT_TOKEN_FACTORY_OWNER
+        // );
+
+        // @dev deploy spotlight token factory proxy contract
+        BeaconProxy beaconProxy = new BeaconProxy(
+            0x0e080cF41caEd4C3d29404798AbDca1c1c34b4f3
+        );
         vm.stopBroadcast();
     }
 }
