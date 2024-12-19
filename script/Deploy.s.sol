@@ -53,14 +53,7 @@ contract Deploy is Script {
         // );
 
         // @dev deploy spotlight token factory implementation contract
-        // SpotlightTokenFactory factoryImpl = new SpotlightTokenFactory(
-        //     5_000_000, // creationFee: 5 usdc
-        //     _SUSDCTokenAddr, // creationFeeToken_
-        //     0xf23BF6DCbdf83De455d39b50ee2a9B7cFC5a4AB0, // tokenBeacon_
-        //     0x2D6f361616a6eF15305d0099434D854f98E5cFE9, // bondingCurve_
-        //     _SUSDCTokenAddr, // baseToken_
-        //     _STORY_DERIVATIVE_WORKFLOWS_ADDRESS // storyDerivativeWorkflows_
-        // );
+        // SpotlightTokenFactory factoryImpl = new SpotlightTokenFactory();
 
         // @dev deploy spotlight token factory beacon contract
         // UpgradeableBeacon spotlightTokenBeacon = new UpgradeableBeacon(
@@ -70,6 +63,15 @@ contract Deploy is Script {
 
         // @dev deploy spotlight token factory proxy contract
         BeaconProxy beaconProxy = new BeaconProxy(0x0e080cF41caEd4C3d29404798AbDca1c1c34b4f3);
+        SpotlightTokenFactory(address(beaconProxy)).initialize(
+            _SPOTLIGHT_TOKEN_FACTORY_OWNER, // owner_
+            5_000_000, // creationFee: 5 usdc
+            _SUSDCTokenAddr, // creationFeeToken_
+            0xf23BF6DCbdf83De455d39b50ee2a9B7cFC5a4AB0, // tokenBeacon_
+            0x2D6f361616a6eF15305d0099434D854f98E5cFE9, // bondingCurve_
+            _SUSDCTokenAddr, // baseToken_
+            _STORY_DERIVATIVE_WORKFLOWS_ADDRESS // storyDerivativeWorkflows_
+        );
         vm.stopBroadcast();
     }
 }

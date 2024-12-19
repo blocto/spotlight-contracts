@@ -3,7 +3,6 @@ pragma solidity ^0.8.13;
 
 import {BeaconProxyStorage} from "../beacon-proxy/BeaconProxyStorage.sol";
 import {BeaconProxy} from "../beacon-proxy/BeaconProxy.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISpotlightTokenFactory} from "./ISpotlightTokenFactory.sol";
 import {ISpotlightToken} from "../spotlight-token/ISpotlightToken.sol";
@@ -13,11 +12,16 @@ import {IStoryDerivativeWorkflows} from "./story-workflow-interfaces/IStoryDeriv
 import {SpotlightTokenFactoryStorage} from "./SpotlightTokenFactoryStorage.sol";
 import {ISpotlightBondingCurve} from "../spotlight-bonding-curve/ISpotlightBondingCurve.sol";
 
-contract SpotlightTokenFactory is BeaconProxyStorage, Ownable, SpotlightTokenFactoryStorage, ISpotlightTokenFactory {
-    constructor() Ownable(msg.sender) {}
+contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStorage, ISpotlightTokenFactory {
+    constructor() {}
 
     modifier needInitialized() {
         _checkIsInitialized();
+        _;
+    }
+
+    modifier onlyOwner() {
+        _checkIsOwner();
         _;
     }
 
@@ -32,16 +36,18 @@ contract SpotlightTokenFactory is BeaconProxyStorage, Ownable, SpotlightTokenFac
      * @dev See {ISpotlightTokenFactory-initialize}.
      */
     function initialize(
+        address owner_,
         uint256 creationFee_,
         address creationFeeToken_,
         address tokenBeacon_,
         address bondingCurve_,
         address baseToken_,
         address storyDerivativeWorkflows_
-    ) external onlyOwner {
+    ) external {
         if (isInitialized()) {
             revert("SpotlightTokenFactory: Already initialized");
         }
+        _owner = owner_;
         _creationFee = creationFee_;
         _creationFeeToken = creationFeeToken_;
         _tokenBeacon = tokenBeacon_;
@@ -50,6 +56,13 @@ contract SpotlightTokenFactory is BeaconProxyStorage, Ownable, SpotlightTokenFac
         _storyDerivativeWorkflows = storyDerivativeWorkflows_;
 
         _isInitialized = true;
+    }
+
+    /**
+     * @dev See {ISpotlightTokenFactory-owner}.
+     */
+    function owner() public view needInitialized returns (address) {
+        return _owner;
     }
 
     /**
@@ -226,6 +239,10 @@ contract SpotlightTokenFactory is BeaconProxyStorage, Ownable, SpotlightTokenFac
         if (!isInitialized()) {
             revert("SpotlightTokenFactory: Not initialized");
         }
+    }
+
+    function _checkIsOwner() internal view {
+        require(msg.sender == _owner, "SpotlightTokenFactory: Not owner");
     }
 
     function _tokenCreateBytecode() internal view returns (bytes memory) {

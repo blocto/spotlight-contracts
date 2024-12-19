@@ -72,6 +72,7 @@ interface ISpotlightTokenFactory {
      * @param storyDerivativeWorkflows_ The address of the story derivative workflows contract.
      */
     function initialize(
+        address owner_,
         uint256 creationFee_,
         address creationFeeToken_,
         address tokenBeacon_,
@@ -79,6 +80,11 @@ interface ISpotlightTokenFactory {
         address baseToken_,
         address storyDerivativeWorkflows_
     ) external;
+
+    /**
+     * @dev Returns the address of the token factory owner.
+     */
+    function owner() external view returns (address);
 
     /**
      * @dev Returns the address of the token IP collection contract

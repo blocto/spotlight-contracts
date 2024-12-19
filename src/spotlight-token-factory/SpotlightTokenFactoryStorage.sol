@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 abstract contract SpotlightTokenFactoryStorage {
     // @dev v1 properties
+    address internal _owner;
     uint256 internal _creationFee;
     address internal _creationFeeToken;
     address internal _tokenBeacon;

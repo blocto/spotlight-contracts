@@ -21,6 +21,7 @@ contract SpotlightTokenFactoryTest is Test {
         _factory = new SpotlightTokenFactory();
         _factoryAddress = address(_factory);
         _factory.initialize(
+            _factoryOwner,
             DEFAULT_CREATION_FEE,
             DEFAULT_CREATION_FEE_TOKEN,
             makeAddr("tokenBeacon"),
