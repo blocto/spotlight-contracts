@@ -69,6 +69,16 @@ interface ISpotlightTokenFactory {
     function setTokenIpCollection(address newTokenIpCollection) external;
 
     /**
+     * @dev Returns the address of the token beacon contract
+     */
+    function tokenBeacon() external view returns (address);
+
+    /**
+     * @dev Sets the address of the token beacon contract
+     */
+    function setTokenBeacon(address newTokenBeacon) external;
+
+    /**
      * @dev Returns the fee to create a token
      */
     function createTokenFee() external view returns (uint256);
@@ -99,16 +109,31 @@ interface ISpotlightTokenFactory {
     function setStoryDerivativeWorkflows(address newStoryDerivativeWorkflows) external;
 
     /**
+     * @dev Returns the address of the base token
+     */
+    function baseToken() external view returns (address);
+
+    /**
+     * @dev Sets the address of the base token
+     */
+    function setBaseToken(address newBaseToken) external;
+
+    /**
+     * @dev Returns the address of the bonding curve contract
+     */
+    function bondingCurve() external view returns (address);
+
+    /**
+     * @dev Sets the address of the bonding curve contract
+     */
+    function setBindingCurve(address newBondingCurve) external;
+
+    /**
      * @dev Computes the address of a token created by the specified token creator.
      * @param tokenCreator The address of the entity creating the token.
-     * @param tokenName The name of the token.
-     * @param tokenSymbol The symbol of the token.
      * @return The calculated token address.
      */
-    function calculateTokenAddress(address tokenCreator, string memory tokenName, string memory tokenSymbol)
-        external
-        view
-        returns (address);
+    function calculateTokenAddress(address tokenCreator) external view returns (address);
 
     /**
      * @dev Creates a new token with the specified parameters and initializes it.
@@ -130,6 +155,12 @@ interface ISpotlightTokenFactory {
         StoryWorkflowStructs.SignatureData calldata sigMetadata,
         StoryWorkflowStructs.SignatureData calldata sigRegister
     ) external returns (address tokenAddress, address ipId);
+
+    /**
+     * @dev Returns the quote for initial buying tokens
+     * @param tokensOut The number of tokens to be bought
+     */
+    function getInitialBuyTokenQuote(uint256 tokensOut) external view returns (uint256);
 
     /**
      * @dev Returns the number of tokens created by a token creator

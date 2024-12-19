@@ -4,7 +4,8 @@ pragma solidity ^0.8.13;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {InitializableERC20} from "./InitializableERC20.sol";
 import {ISpotlightToken} from "./ISpotlightToken.sol";
-import {BeaconProxyStorage, SpotlightTokenStorage} from "./SpotlightTokenStorage.sol";
+import {SpotlightTokenStorage} from "./SpotlightTokenStorage.sol";
+import {BeaconProxyStorage} from "../beacon-proxy/BeaconProxyStorage.sol";
 import {ISpotlightBondingCurve} from "../spotlight-bonding-curve/ISpotlightBondingCurve.sol";
 
 contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightTokenStorage, ISpotlightToken {

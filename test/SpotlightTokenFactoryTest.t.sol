@@ -19,7 +19,12 @@ contract SpotlightTokenFactoryTest is Test {
         _factoryOwner = makeAddr("factoryOwner");
         vm.startPrank(_factoryOwner);
         _factory = new SpotlightTokenFactory(
-            DEFAULT_CREATION_FEE, DEFAULT_CREATION_FEE_TOKEN, STORY_DERIVATIVE_WORKFLOWS_ADDRESS
+            DEFAULT_CREATION_FEE,
+            DEFAULT_CREATION_FEE_TOKEN,
+            makeAddr("tokenBeacon"),
+            makeAddr("bondingCurve"),
+            makeAddr("baseToken"),
+            STORY_DERIVATIVE_WORKFLOWS_ADDRESS
         );
         _factoryAddress = address(_factory);
         vm.stopPrank();

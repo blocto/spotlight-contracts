@@ -15,10 +15,3 @@ abstract contract SpotlightTokenStorage {
     bool internal _isInitialized;
     // @dev end of v1 properties
 }
-
-/*
- * @dev to algin the storage slots with the proxy contract
- */
-abstract contract BeaconProxyStorage {
-    address private immutable _beacon;
-}

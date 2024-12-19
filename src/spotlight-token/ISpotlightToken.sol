@@ -48,6 +48,27 @@ interface ISpotlightToken {
     );
 
     /**
+     * @dev Initializes the token.
+     *
+     * @param owner_ The address of the token owner.
+     * @param tokenCreator_ The address of the token creator.
+     * @param bondingCurve_ The address of the bonding curve.
+     * @param baseToken_ The address of the base token.
+     * @param protocolFeeRecipient_ The address of the protocol fee recipient.
+     * @param tokenName_ The name of the token.
+     * @param tokenSymbol_ The symbol of the token.
+     */
+    function initialize(
+        address owner_,
+        address tokenCreator_,
+        address bondingCurve_,
+        address baseToken_,
+        address protocolFeeRecipient_,
+        string memory tokenName_,
+        string memory tokenSymbol_
+    ) external;
+
+    /**
      * @dev Returns if the token has been initialized.
      */
     function isInitialized() external view returns (bool);
