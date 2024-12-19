@@ -1,18 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.13;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {InitializableERC20} from "./InitializableERC20.sol";
 import {ISpotlightToken} from "./ISpotlightToken.sol";
-import {SpotlightTokenStorage} from "./SpotlightTokenStorage.sol";
+import {BeaconProxyStorage, SpotlightTokenStorage} from "./SpotlightTokenStorage.sol";
 import {ISpotlightBondingCurve} from "../spotlight-bonding-curve/ISpotlightBondingCurve.sol";
 
-contract SpotlightToken is Ownable, InitializableERC20, ISpotlightToken, SpotlightTokenStorage {
-    constructor() InitializableERC20() Ownable(msg.sender) {}
+contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightTokenStorage, ISpotlightToken {
+    constructor() InitializableERC20() {}
 
     modifier needInitialized() {
         _checkIsInitialized();
+        _;
+    }
+
+    modifier onlyOwner() {
+        _checkIsOwner();
         _;
     }
 
@@ -20,6 +24,7 @@ contract SpotlightToken is Ownable, InitializableERC20, ISpotlightToken, Spotlig
      * @dev See {ISpotlightToken-initialize}.
      */
     function initialize(
+        address owner_,
         address tokenCreator_,
         address bondingCurve_,
         address baseToken_,
@@ -27,6 +32,7 @@ contract SpotlightToken is Ownable, InitializableERC20, ISpotlightToken, Spotlig
         string memory tokenName_,
         string memory tokenSymbol_
     ) external {
+        _owner = owner_;
         _tokenCreator = tokenCreator_;
         _protocolFeeRecipient = protocolFeeRecipient_;
         _bondingCurve = bondingCurve_;
@@ -40,28 +46,35 @@ contract SpotlightToken is Ownable, InitializableERC20, ISpotlightToken, Spotlig
     /*
      * @dev See {ISpotlightToken-isInitialized}.
      */
-    function isInitialized() public view returns (bool) {
+    function isInitialized() public view needInitialized returns (bool) {
         return _isInitialized;
+    }
+
+    /*
+     * @dev See {ISpotlightToken-owner}.
+     */
+    function owner() public view needInitialized returns (address) {
+        return _owner;
     }
 
     /*
      * @dev See {ISpotlightToken-tokenCreator}.
      */
-    function tokenCreator() public view returns (address) {
+    function tokenCreator() public view needInitialized returns (address) {
         return _tokenCreator;
     }
 
     /*
      * @dev See {ISpotlightToken-baseToken}.
      */
-    function protocolFeeRecipient() public view returns (address) {
+    function protocolFeeRecipient() public view needInitialized returns (address) {
         return _protocolFeeRecipient;
     }
 
     /*
      * @dev See {ISpotlightToken-setProtocolFeeRecipient}.
      */
-    function setProtocolFeeRecipient(address newRecipient) external onlyOwner {
+    function setProtocolFeeRecipient(address newRecipient) external needInitialized onlyOwner {
         _protocolFeeRecipient = newRecipient;
     }
 
@@ -209,6 +222,10 @@ contract SpotlightToken is Ownable, InitializableERC20, ISpotlightToken, Spotlig
     }
 
     // @dev Private functions
+    function _checkIsOwner() internal view {
+        require(msg.sender == _owner, "SpotlightToken: Not owner");
+    }
+
     function _checkIsInitialized() internal view {
         require(_isInitialized, "SpotlightToken: Not initialized");
     }

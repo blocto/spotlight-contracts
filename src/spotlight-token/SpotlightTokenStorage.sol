@@ -7,10 +7,18 @@ abstract contract SpotlightTokenStorage {
     uint256 public constant PROTOCOL_TRADING_FEE_PCT = 1; // 1%
     uint256 public constant MIN_USDC_ORDER_SIZE = 100; // 0.0001 USDC
 
+    address internal _owner;
     address internal _tokenCreator;
     address internal _protocolFeeRecipient;
     address internal _bondingCurve;
     address internal _baseToken;
     bool internal _isInitialized;
     // @dev end of v1 properties
+}
+
+/*
+ * @dev to algin the storage slots with the proxy contract
+ */
+abstract contract BeaconProxyStorage {
+    address private immutable _beacon;
 }

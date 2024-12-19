@@ -53,6 +53,11 @@ interface ISpotlightToken {
     function isInitialized() external view returns (bool);
 
     /**
+     * @dev Returns the address of the token owner.
+     */
+    function owner() external view returns (address);
+
+    /**
      * @dev Returns the address of the token creator.
      */
     function tokenCreator() external view returns (address);

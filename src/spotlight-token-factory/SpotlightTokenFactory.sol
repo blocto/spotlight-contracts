@@ -131,8 +131,7 @@ contract SpotlightTokenFactory is Ownable, ISpotlightTokenFactory {
         returns (bytes memory)
     {
         bytes memory creationCode = type(SpotlightToken).creationCode;
-        bytes memory bytecode =
-            abi.encodePacked(creationCode, abi.encode(address(this), tokenCreator, tokenName, tokenSymbol));
+        bytes memory bytecode = abi.encodePacked(creationCode);
         return bytecode;
     }
 
@@ -144,8 +143,15 @@ contract SpotlightTokenFactory is Ownable, ISpotlightTokenFactory {
         internal
         returns (address)
     {
-        SpotlightToken token = new SpotlightToken{salt: _salt(creator)}(
-            address(this), msg.sender, tokenCreationData.tokenName, tokenCreationData.tokenSymbol
+        SpotlightToken token = new SpotlightToken{salt: _salt(creator)}();
+        token.initialize(
+            owner(),
+            creator,
+            address(0), // bonding curve
+            address(0), // base token
+            address(0), // protocol fee reciepent
+            tokenCreationData.tokenName,
+            tokenCreationData.tokenSymbol
         );
         address tokenAddress = address(token);
         if (tokenAddress != tokenCreationData.predeployedTokenAddress) {
