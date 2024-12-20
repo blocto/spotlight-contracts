@@ -259,7 +259,7 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
         internal
         returns (address)
     {
-        BeaconProxy tokenProxy = new BeaconProxy(_tokenBeacon);
+        BeaconProxy tokenProxy = new BeaconProxy{salt: _salt(creator)}(_tokenBeacon);
         address tokenAddress = address(tokenProxy);
         ISpotlightToken(tokenAddress).initialize(
             owner(),
