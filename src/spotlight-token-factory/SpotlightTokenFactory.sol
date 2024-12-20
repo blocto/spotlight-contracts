@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import {BeaconProxyStorage} from "../beacon-proxy/BeaconProxyStorage.sol";
 import {BeaconProxy} from "../beacon-proxy/BeaconProxy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {ISpotlightTokenFactory} from "./ISpotlightTokenFactory.sol";
 import {ISpotlightToken} from "../spotlight-token/ISpotlightToken.sol";
 import {ISpotlightTokenIPCollection} from "../spotlight-token-collection/ISpotlightTokenIPCollection.sol";
@@ -13,8 +14,6 @@ import {SpotlightTokenFactoryStorage} from "./SpotlightTokenFactoryStorage.sol";
 import {ISpotlightBondingCurve} from "../spotlight-bonding-curve/ISpotlightBondingCurve.sol";
 
 contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStorage, ISpotlightTokenFactory {
-    constructor() {}
-
     modifier needInitialized() {
         _checkIsInitialized();
         _;
@@ -39,6 +38,7 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
         address owner_,
         uint256 creationFee_,
         address creationFeeToken_,
+        address tokenIpCollection_,
         address tokenBeacon_,
         address bondingCurve_,
         address baseToken_,
@@ -50,6 +50,7 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
         _owner = owner_;
         _creationFee = creationFee_;
         _creationFeeToken = creationFeeToken_;
+        _tokenIpCollection = tokenIpCollection_;
         _tokenBeacon = tokenBeacon_;
         _bondingCurve = bondingCurve_;
         _baseToken = baseToken_;
@@ -201,15 +202,15 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
             tokenAddress,
             ipId,
             msg.sender,
-            tokenCreationData.tokenName,
-            tokenCreationData.tokenSymbol,
+            IERC20Metadata(tokenAddress).name(),
+            IERC20Metadata(tokenAddress).symbol(),
             tokenCreationData.tokenIpNFTId,
             initialBuyData.initialBuyAmount,
             initialBuyData.initialBuyRecipient,
             feeToken(),
             createTokenFee(),
             address(this),
-            address(0)
+            bondingCurve()
         );
     }
 

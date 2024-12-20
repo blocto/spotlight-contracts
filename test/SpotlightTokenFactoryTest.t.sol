@@ -24,6 +24,7 @@ contract SpotlightTokenFactoryTest is Test {
             _factoryOwner,
             DEFAULT_CREATION_FEE,
             DEFAULT_CREATION_FEE_TOKEN,
+            makeAddr("tokenIpCollection"),
             makeAddr("tokenBeacon"),
             makeAddr("bondingCurve"),
             makeAddr("baseToken"),

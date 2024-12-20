@@ -53,20 +53,19 @@ contract Deploy is Script {
         // );
 
         // @dev deploy spotlight token factory implementation contract
-        // SpotlightTokenFactory factoryImpl = new SpotlightTokenFactory();
+        SpotlightTokenFactory factoryImpl = new SpotlightTokenFactory();
 
         // @dev deploy spotlight token factory beacon contract
-        // UpgradeableBeacon spotlightTokenBeacon = new UpgradeableBeacon(
-        //     0x043a1D75f6A7ACe220f3E852637422d38b39288D,
-        //     _SPOTLIGHT_TOKEN_FACTORY_OWNER
-        // );
+        UpgradeableBeacon spotlightTokenBeacon =
+            new UpgradeableBeacon(address(factoryImpl), _SPOTLIGHT_TOKEN_FACTORY_OWNER);
 
         // @dev deploy spotlight token factory proxy contract
-        BeaconProxy beaconProxy = new BeaconProxy(0x0e080cF41caEd4C3d29404798AbDca1c1c34b4f3);
+        BeaconProxy beaconProxy = new BeaconProxy(address(spotlightTokenBeacon));
         SpotlightTokenFactory(address(beaconProxy)).initialize(
             _SPOTLIGHT_TOKEN_FACTORY_OWNER, // owner_
             5_000_000, // creationFee: 5 usdc
             _SUSDCTokenAddr, // creationFeeToken_
+            0xAA83cf1e2AEb70A8EB5DBF1DA88faD0Feed2388B, // tokenIpCollection_
             0xf23BF6DCbdf83De455d39b50ee2a9B7cFC5a4AB0, // tokenBeacon_
             0x2D6f361616a6eF15305d0099434D854f98E5cFE9, // bondingCurve_
             _SUSDCTokenAddr, // baseToken_

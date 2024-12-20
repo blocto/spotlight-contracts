@@ -64,8 +64,10 @@ interface ISpotlightTokenFactory {
     /**
      * @dev Initializes the token factory.
      *
+     * @param owner_ The address of the token factory owner.
      * @param creationFee_ The fee to create a token.
      * @param creationFeeToken_ The address of the token used for paying the creation fee.
+     * @param tokenIpCollection_ The address of the token IP collection contract.
      * @param tokenBeacon_ The address of the token beacon contract.
      * @param bondingCurve_ The address of the bonding curve contract.
      * @param baseToken_ The address of the base token.
@@ -75,6 +77,7 @@ interface ISpotlightTokenFactory {
         address owner_,
         uint256 creationFee_,
         address creationFeeToken_,
+        address tokenIpCollection_,
         address tokenBeacon_,
         address bondingCurve_,
         address baseToken_,
