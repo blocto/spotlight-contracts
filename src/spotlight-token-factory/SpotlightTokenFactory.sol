@@ -253,7 +253,7 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
     }
 
     function _salt(address account) internal view returns (bytes32) {
-        return bytes32(numberOfTokensCreated(account));
+        return keccak256(abi.encodePacked(account, numberOfTokensCreated(account)));
     }
 
     function _deploySpotlightToken(TokenCreationData memory tokenCreationData, address creator)
