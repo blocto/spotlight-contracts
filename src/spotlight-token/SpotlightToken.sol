@@ -107,7 +107,11 @@ contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightToke
             revert("SpotlightToken: Slippage limit exceeded");
         }
 
-        uint256 maxRemainingToken = BONDIGN_CURVE_SUPPLY - totalSupply();
+        uint256 maxRemainingToken = BONDING_CURVE_SUPPLY - totalSupply();
+        if (!(maxRemainingToken > 0)) {
+            revert("SpotlightToken: Bonding curve max supply reached");
+        }
+
         if (tokenOutQuote > maxRemainingToken) {
             usdcIn = getTokenBuyQuote(maxRemainingToken);
             tokenOut = maxRemainingToken;
@@ -132,7 +136,11 @@ contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightToke
         uint256 tokenOut;
         uint256 tradingFee;
 
-        uint256 maxRemainingToken = BONDIGN_CURVE_SUPPLY - totalSupply();
+        uint256 maxRemainingToken = BONDING_CURVE_SUPPLY - totalSupply();
+        if (!(maxRemainingToken > 0)) {
+            revert("SpotlightToken: Bonding curve max supply reached");
+        }
+
         if (tokenAmount > maxRemainingToken) {
             tokenOut = maxRemainingToken;
         } else {
@@ -164,7 +172,7 @@ contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightToke
         if (usdcOutQuote < MIN_USDC_ORDER_SIZE) {
             revert("SpotlightToken: Min order size not met");
         }
-        tradingFee = (usdcOut * PROTOCOL_TRADING_FEE_PCT) / 100;
+        tradingFee = (usdcOutQuote * PROTOCOL_TRADING_FEE_PCT) / 100;
         usdcOut = usdcOutQuote - tradingFee;
         if (usdcOut < minUSDCOut) {
             revert("SpotlightToken: Slippage limit exceeded");
