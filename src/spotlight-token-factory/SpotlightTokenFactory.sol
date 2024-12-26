@@ -12,6 +12,7 @@ import {StoryWorkflowStructs} from "./story-workflow-interfaces/StoryWorkflowStr
 import {IStoryDerivativeWorkflows} from "./story-workflow-interfaces/IStoryDerivativeWorkflows.sol";
 import {SpotlightTokenFactoryStorage} from "./SpotlightTokenFactoryStorage.sol";
 import {ISpotlightBondingCurve} from "../spotlight-bonding-curve/ISpotlightBondingCurve.sol";
+import {IWETH} from "./IWETH-interfaces/IWETH.sol";
 
 contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStorage, ISpotlightTokenFactory {
     modifier needInitialized() {
@@ -37,7 +38,6 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
     function initialize(
         address owner_,
         uint256 creationFee_,
-        address creationFeeToken_,
         address tokenIpCollection_,
         address tokenBeacon_,
         address bondingCurve_,
@@ -49,7 +49,6 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
         }
         _owner = owner_;
         _creationFee = creationFee_;
-        _creationFeeToken = creationFeeToken_;
         _tokenIpCollection = tokenIpCollection_;
         _tokenBeacon = tokenBeacon_;
         _bondingCurve = bondingCurve_;
@@ -106,20 +105,6 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
      */
     function setCreateTokenFee(uint256 newFee) external needInitialized onlyOwner {
         _creationFee = newFee;
-    }
-
-    /**
-     * @dev See {ISpotlightTokenFactory-feeToken}.
-     */
-    function feeToken() public view needInitialized returns (address) {
-        return _creationFeeToken;
-    }
-
-    /**
-     * @dev See {ISpotlightTokenFactory-setFeeToken}.
-     */
-    function setFeeToken(address newToken) external needInitialized onlyOwner {
-        _creationFeeToken = newToken;
     }
 
     /**
@@ -185,7 +170,7 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
         StoryWorkflowStructs.IPMetadata calldata ipMetadata,
         StoryWorkflowStructs.SignatureData calldata sigMetadata,
         StoryWorkflowStructs.SignatureData calldata sigRegister
-    ) external needInitialized returns (address tokenAddress, address ipId) {
+    ) external payable needInitialized returns (address tokenAddress, address ipId) {
         tokenAddress = _deploySpotlightToken(tokenCreationData, msg.sender);
 
         ISpotlightTokenIPCollection(_tokenIpCollection).mint(msg.sender, tokenCreationData.tokenIpNFTId);
@@ -207,7 +192,6 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
             tokenCreationData.tokenIpNFTId,
             initialBuyData.initialBuyAmount,
             initialBuyData.initialBuyRecipient,
-            feeToken(),
             createTokenFee(),
             address(this),
             bondingCurve()
@@ -277,17 +261,29 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
         return tokenAddress;
     }
 
+    // @todo: wait until the buyToken function is implemented
     function _initalBuy(address tokenAddress, IntialBuyData memory initialBuyData) internal {
-        if (initialBuyData.initialBuyAmount > 0) {
-            ISpotlightToken(tokenAddress).buyToken(
-                initialBuyData.initialBuyAmount, initialBuyData.initialBuyRecipient, type(uint256).max
-            );
-        }
+        if (initialBuyData.initialBuyAmount == 0) return;
+
+        ISpotlightToken(tokenAddress).buyToken(
+            initialBuyData.initialBuyAmount, initialBuyData.initialBuyRecipient, type(uint256).max
+        );
     }
 
     function _chargeCreationFee(address tokenCreator) internal {
-        if (createTokenFee() > 0) {
-            IERC20(_creationFeeToken).transferFrom(tokenCreator, address(this), createTokenFee());
+        uint256 fee = createTokenFee();
+        if (fee == 0) return;
+
+        if (msg.value < fee) {
+            revert("SpotlightTokenFactory: Insufficient creation fee");
+        }
+
+        // Return excess ETH if sent more than required
+        if (msg.value > fee) {
+            (bool success,) = tokenCreator.call{value: msg.value - fee}("");
+            if (!success) {
+                revert("SpotlightTokenFactory: Failed to return excess fee");
+            }
         }
     }
 }

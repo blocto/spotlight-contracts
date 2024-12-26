@@ -64,7 +64,6 @@ contract Deploy is Script {
         SpotlightTokenFactory(address(factoryProxy)).initialize(
             _SPOTLIGHT_TOKEN_FACTORY_OWNER, // owner_
             5_000_000, // creationFee: 5 usdc
-            _SUSDCTokenAddr, // creationFeeToken_
             address(tokenIpCollection), // tokenIpCollection_
             address(spotlightTokenBeacon), // tokenBeacon_
             address(bondingCurve), // bondingCurve_

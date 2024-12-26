@@ -5,7 +5,7 @@ abstract contract SpotlightTokenFactoryStorage {
     // @dev v1 properties
     address internal _owner;
     uint256 internal _creationFee;
-    address internal _creationFeeToken;
+    address internal _creationFeeToken; //deprecated
     address internal _tokenBeacon;
     address internal _bondingCurve;
     address internal _baseToken;

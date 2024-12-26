@@ -36,7 +36,6 @@ interface ISpotlightTokenFactory {
      * @param tokenIpNFTId The ID of the NFT representing the IP associated with the token.
      * @param initialBuyAmount The amount of tokens purchased initially.
      * @param initialBuyRecipient The address that received the initial purchased tokens.
-     * @param feeToken The address of the token used for paying the creation fee.
      * @param fee The fee amount paid for the token creation.
      * @param factory The address of the factory contract used for token creation.
      * @param bondingCurve The address of the bonding curve contract used for token economics.
@@ -50,7 +49,6 @@ interface ISpotlightTokenFactory {
         uint256 tokenIpNFTId,
         uint256 initialBuyAmount,
         address initialBuyRecipient,
-        address feeToken,
         uint256 fee,
         address factory,
         address bondingCurve
@@ -66,17 +64,14 @@ interface ISpotlightTokenFactory {
      *
      * @param owner_ The address of the token factory owner.
      * @param creationFee_ The fee to create a token.
-     * @param creationFeeToken_ The address of the token used for paying the creation fee.
      * @param tokenIpCollection_ The address of the token IP collection contract.
      * @param tokenBeacon_ The address of the token beacon contract.
      * @param bondingCurve_ The address of the bonding curve contract.
-     * @param baseToken_ The address of the base token.
      * @param storyDerivativeWorkflows_ The address of the story derivative workflows contract.
      */
     function initialize(
         address owner_,
         uint256 creationFee_,
-        address creationFeeToken_,
         address tokenIpCollection_,
         address tokenBeacon_,
         address bondingCurve_,
@@ -112,24 +107,14 @@ interface ISpotlightTokenFactory {
     function setTokenBeacon(address newTokenBeacon) external;
 
     /**
-     * @dev Returns the fee to create a token
+     * @dev Returns the fee amount required to create a token (in native token)
      */
     function createTokenFee() external view returns (uint256);
 
     /**
-     * @dev Sets the fee to create a token
+     * @dev Sets the fee amount required to create a token (in native token)
      */
     function setCreateTokenFee(uint256 newFee) external;
-
-    /**
-     * @dev Returns the address of the fee token
-     */
-    function feeToken() external view returns (address);
-
-    /**
-     * @dev Sets the address of the fee token
-     */
-    function setFeeToken(address newToken) external;
 
     /**
      * @dev Returns the address of the story derivative workflows contract
@@ -170,6 +155,7 @@ interface ISpotlightTokenFactory {
 
     /**
      * @dev Creates a new token with the specified parameters and initializes it.
+     * @notice Creation fee must be paid in native token.
      * @param tokenCreationData Details for creating the token.
      * @param initialBuyData Details for the initial purchase of the token.
      * @param derivData Details for creating a derivative token. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
@@ -187,7 +173,7 @@ interface ISpotlightTokenFactory {
         StoryWorkflowStructs.IPMetadata calldata ipMetadata,
         StoryWorkflowStructs.SignatureData calldata sigMetadata,
         StoryWorkflowStructs.SignatureData calldata sigRegister
-    ) external returns (address tokenAddress, address ipId);
+    ) external payable returns (address tokenAddress, address ipId);
 
     /**
      * @dev Returns the quote for initial buying tokens
