@@ -169,9 +169,6 @@ contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightToke
         uint256 tradingFee;
 
         uint256 usdcOutQuote = getTokenSellQuote(tokenIn);
-        if (usdcOutQuote < MIN_USDC_ORDER_SIZE) {
-            revert("SpotlightToken: Min order size not met");
-        }
         tradingFee = (usdcOutQuote * PROTOCOL_TRADING_FEE_PCT) / 100;
         usdcOut = usdcOutQuote - tradingFee;
         if (usdcOut < minUSDCOut) {
