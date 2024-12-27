@@ -33,6 +33,10 @@ contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightToke
         string memory tokenName_,
         string memory tokenSymbol_
     ) external {
+        if (isInitialized()) {
+            revert("SpotlightToken: Already initialized");
+        }
+
         _owner = owner_;
         _tokenCreator = tokenCreator_;
         _protocolFeeRecipient = protocolFeeRecipient_;
@@ -47,7 +51,7 @@ contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightToke
     /*
      * @dev See {ISpotlightToken-isInitialized}.
      */
-    function isInitialized() public view needInitialized returns (bool) {
+    function isInitialized() public view returns (bool) {
         return _isInitialized;
     }
 
