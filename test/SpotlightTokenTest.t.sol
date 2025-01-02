@@ -393,17 +393,21 @@ contract SpotlightTokenTest is Test {
         vm.stopPrank();
         assertEq(_token.balanceOf(_buyer), USER_BUY_TOKEN_AMOUNT);
 
-        uint256 USER_SELL_TOKEN_AMOUNT = 50_000_000e18;
+        uint256 USER_SELL_TOKEN_AMOUNT = USER_BUY_TOKEN_AMOUNT / 2;
         address[] memory paths = new address[](2);
         paths[0] = address(_token);
         paths[1] = address(WRAPPER_IP);
         uint256[] memory amounts = IUniswapV2Router02(PIPERX_V2_ROUTER).getAmountsOut(USER_SELL_TOKEN_AMOUNT, paths);
-        uint256 ipOut = amounts[1];
+        uint256 expectedIpOut = amounts[1];
 
         vm.deal(_buyer, 1 ether);
+        uint256 buyerBalanceBefore = _buyer.balance;
         vm.startPrank(_buyer);
         _token.sellToken(USER_SELL_TOKEN_AMOUNT, _buyer, 0, MarketType.PIPERX_POOL);
         vm.stopPrank();
+
+        assertEq(_token.balanceOf(_buyer), USER_BUY_TOKEN_AMOUNT - USER_SELL_TOKEN_AMOUNT);
+        assertEq(_buyer.balance, buyerBalanceBefore + expectedIpOut);
     }
 
     function testSellTokenRevertsWhenMarketTypeMismatch() public {

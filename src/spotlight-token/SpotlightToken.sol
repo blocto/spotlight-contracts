@@ -240,26 +240,25 @@ contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightToke
             revert InsufficientLiquidity();
         }
 
-        uint256 truePayoutSize;
-        uint256 payoutAfterFee;
         if (_marketType == MarketType.PIPERX_POOL) {
-            truePayoutSize = _handleUniswapSell(tokenAmount, minIPOut);
-            payoutAfterFee = truePayoutSize;
+            _handleUniswapSell(tokenAmount, minIPOut);
         }
 
         if (_marketType == MarketType.BONDING_CURVE) {
+            uint256 truePayoutSize;
+            uint256 payoutAfterFee;
             truePayoutSize = _handleBondingCurveSell(tokenAmount, minIPOut);
             uint256 fee = _calculateFee(truePayoutSize, TOTAL_FEE_BPS);
             payoutAfterFee = truePayoutSize - fee;
             _disperseFees(fee, msg.sender);
 
+            (bool success,) = recipient.call{value: payoutAfterFee}("");
+            if (!success) revert EthTransferFailed();
+
             emit SpotlightTokenSold(
                 msg.sender, recipient, payoutAfterFee, fee, truePayoutSize, tokenAmount, totalSupply()
             );
         }
-
-        (bool success,) = recipient.call{value: payoutAfterFee}("");
-        if (!success) revert EthTransferFailed();
     }
 
     receive() external payable {
@@ -357,14 +356,11 @@ contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightToke
         path[0] = address(this);
         path[1] = _baseToken;
 
-        uint256[] memory amounts = IUniswapV2Router02(_piperXRouter).swapExactTokensForTokens(
-            tokensToSell, minPayoutSize, path, address(this), block.timestamp
+        uint256[] memory amounts = IUniswapV2Router02(_piperXRouter).swapExactTokensForETH(
+            tokensToSell, minPayoutSize, path, msg.sender, block.timestamp
         );
 
-        uint256 payout = amounts[1];
-        IWETH(_baseToken).withdraw(payout);
-
-        return payout;
+        return amounts[1];
     }
 
     function _validateBondingCurveBuyToken(uint256 tokenAmount)
@@ -375,7 +371,7 @@ contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightToke
         fee = _calculateFee(ipIn, TOTAL_FEE_BPS);
 
         totalCost = ipIn + fee;
-        
+
         if (totalCost > msg.value) revert EthAmountTooSmall();
 
         uint256 maxRemainingTokens = BONDING_CURVE_SUPPLY - totalSupply();
