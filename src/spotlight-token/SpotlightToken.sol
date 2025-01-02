@@ -7,6 +7,10 @@ import {ISpotlightToken} from "./ISpotlightToken.sol";
 import {SpotlightTokenStorage} from "./SpotlightTokenStorage.sol";
 import {BeaconProxyStorage} from "../beacon-proxy/BeaconProxyStorage.sol";
 import {ISpotlightBondingCurve} from "../spotlight-bonding-curve/ISpotlightBondingCurve.sol";
+import {IWETH} from "../interfaces/IWETH.sol";
+import {IUniswapV2Router02} from "../interfaces/IUniswapV2Router02.sol";
+import {IUniswapV2Factory} from "../interfaces/IUniswapV2Factory.sol";
+import {MarketType, MarketState} from "./ISpotlightToken.sol";
 
 contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightTokenStorage, ISpotlightToken {
     constructor() InitializableERC20() {}
@@ -21,6 +25,13 @@ contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightToke
         _;
     }
 
+    error SlippageBoundsExceeded();
+    error EthTransferFailed();
+    error InvalidMarketType();
+    error InsufficientLiquidity();
+    error AddressZero();
+    error EthAmountTooSmall();
+
     /*
      * @dev See {ISpotlightToken-initialize}.
      */
@@ -31,7 +42,9 @@ contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightToke
         address baseToken_,
         address protocolFeeRecipient_,
         string memory tokenName_,
-        string memory tokenSymbol_
+        string memory tokenSymbol_,
+        address piperXRouter_,
+        address piperXFactory_
     ) external {
         if (isInitialized()) {
             revert("SpotlightToken: Already initialized");
@@ -46,6 +59,9 @@ contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightToke
         _tokenSymbol = tokenSymbol_;
 
         _isInitialized = true;
+        _marketType = MarketType.BONDING_CURVE;
+        _piperXRouter = piperXRouter_;
+        _piperXFactory = piperXFactory_;
     }
 
     /*
@@ -91,144 +107,226 @@ contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightToke
     }
 
     /*
+     * @dev See {ISpotlightToken-state}.
+     */
+    function state() external view returns (MarketState memory) {
+        return MarketState({
+            marketType: _marketType,
+            marketAddress: _marketType == MarketType.BONDING_CURVE ? address(this) : _pairAddress
+        });
+    }
+
+    /*
      * @dev See {ISpotlightToken-setBondingCurve}.
      */
-    function buyWithUSDC(uint256 usdcAmount, address recipient, uint256 minTokenOut) external needInitialized {
-        uint256 usdcIn;
-        uint256 tokenOut;
-        uint256 tradingFee;
+    function buyWithIP(address recipient, uint256 minTokenOut, MarketType expectedMarketType)
+        public
+        payable
+        needInitialized
+    {
+        if (_marketType != expectedMarketType) revert InvalidMarketType();
+        if (msg.value < MIN_IP_ORDER_SIZE) revert EthAmountTooSmall();
+        if (recipient == address(0)) revert AddressZero();
 
-        tradingFee = (usdcAmount * PROTOCOL_TRADING_FEE_PCT) / 100;
-        uint256 usdcOrderSize = usdcAmount - tradingFee;
+        uint256 totalCost;
+        uint256 trueOrderSize;
+        uint256 fee;
+        uint256 refund;
 
-        if (usdcOrderSize < MIN_USDC_ORDER_SIZE) {
-            revert("SpotlightToken: Min order size not met");
+        if (_marketType == MarketType.PIPERX_POOL) {
+            totalCost = msg.value;
+            IWETH(_baseToken).deposit{value: totalCost}();
+            IERC20(_baseToken).approve(_piperXRouter, totalCost);
+
+            address[] memory path = new address[](2);
+            path[0] = _baseToken;
+            path[1] = address(this);
+
+            uint256[] memory amounts = IUniswapV2Router02(_piperXRouter).swapExactTokensForTokens(
+                totalCost, minTokenOut, path, recipient, block.timestamp
+            );
+
+            trueOrderSize = amounts[1];
         }
 
-        uint256 tokenOutQuote = getUSDCBuyQuote(usdcOrderSize);
+        if (_marketType == MarketType.BONDING_CURVE) {
+            bool shouldGraduateMarket;
+            (totalCost, trueOrderSize, fee, refund, shouldGraduateMarket) = _validateBondingCurveBuy(minTokenOut);
 
-        if (tokenOutQuote < minTokenOut) {
-            revert("SpotlightToken: Slippage limit exceeded");
+            _mint(recipient, trueOrderSize);
+            _disperseFees(fee, msg.sender);
+            if (refund > 0) {
+                (bool success,) = recipient.call{value: refund}("");
+                if (!success) revert EthTransferFailed();
+            }
+
+            emit SpotlightTokenBought(
+                msg.sender, recipient, totalCost, fee, totalCost - fee, trueOrderSize, totalSupply()
+            );
+
+            if (shouldGraduateMarket) {
+                _graduateMarket();
+            }
         }
-
-        uint256 maxRemainingToken = BONDING_CURVE_SUPPLY - totalSupply();
-        if (!(maxRemainingToken > 0)) {
-            revert("SpotlightToken: Bonding curve max supply reached");
-        }
-
-        if (tokenOutQuote > maxRemainingToken) {
-            usdcIn = getTokenBuyQuote(maxRemainingToken);
-            tokenOut = maxRemainingToken;
-            tradingFee = (usdcIn * PROTOCOL_TRADING_FEE_PCT) / 100;
-        } else {
-            usdcIn = usdcOrderSize;
-            tokenOut = tokenOutQuote;
-        }
-
-        _buy(msg.sender, recipient, usdcIn, tokenOut, tradingFee);
     }
 
     /*
      * @dev See {ISpotlightToken-buyToken}.
      */
-    function buyToken(uint256 tokenAmount, address recipient, uint256 maxUSDCIn) external needInitialized {
-        if (getTokenBuyQuoteWithFee(tokenAmount) > maxUSDCIn) {
-            revert("SpotlightToken: Slippage limit exceeded");
+    function buyToken(uint256 tokenAmount, address recipient, MarketType expectedMarketType)
+        external
+        payable
+        needInitialized
+    {
+        if (_marketType != expectedMarketType) revert InvalidMarketType();
+        if (msg.value < MIN_IP_ORDER_SIZE) revert EthAmountTooSmall();
+        if (recipient == address(0)) revert AddressZero();
+
+        uint256 totalCost;
+        uint256 trueOrderSize;
+        uint256 fee;
+        uint256 refund;
+
+        if (_marketType == MarketType.PIPERX_POOL) {
+            address[] memory path = new address[](2);
+            path[0] = _baseToken;
+            path[1] = address(this);
+
+            uint256[] memory amountIns = IUniswapV2Router02(_piperXRouter).getAmountsIn(tokenAmount, path);
+            uint256 amountIn = amountIns[0];
+
+            IWETH(_baseToken).deposit{value: amountIn}();
+            IERC20(_baseToken).approve(_piperXRouter, amountIn);
+
+            uint256[] memory amounts = IUniswapV2Router02(_piperXRouter).swapTokensForExactTokens(
+                tokenAmount, amountIn, path, recipient, block.timestamp
+            );
+
+            trueOrderSize = amounts[1];
         }
 
-        uint256 usdcIn;
-        uint256 tokenOut;
-        uint256 tradingFee;
+        if (_marketType == MarketType.BONDING_CURVE) {
+            bool shouldGraduateMarket;
+            (totalCost, trueOrderSize, fee, refund, shouldGraduateMarket) = _validateBondingCurveBuyToken(tokenAmount);
 
-        uint256 maxRemainingToken = BONDING_CURVE_SUPPLY - totalSupply();
-        if (!(maxRemainingToken > 0)) {
-            revert("SpotlightToken: Bonding curve max supply reached");
+            _mint(recipient, trueOrderSize);
+            _disperseFees(fee, msg.sender);
+
+            if (refund > 0) {
+                (bool success,) = recipient.call{value: refund}("");
+                if (!success) revert EthTransferFailed();
+            }
+
+            emit SpotlightTokenBought(
+                msg.sender, recipient, totalCost, fee, totalCost - fee, trueOrderSize, totalSupply()
+            );
+
+            if (shouldGraduateMarket) {
+                _graduateMarket();
+            }
         }
-
-        if (tokenAmount > maxRemainingToken) {
-            tokenOut = maxRemainingToken;
-        } else {
-            tokenOut = tokenAmount;
-        }
-
-        usdcIn = getTokenBuyQuote(tokenOut);
-        if (usdcIn < MIN_USDC_ORDER_SIZE) {
-            revert("SpotlightToken: Min order size not met");
-        }
-        tradingFee = (usdcIn * PROTOCOL_TRADING_FEE_PCT) / 100;
-
-        _buy(msg.sender, recipient, usdcIn, tokenOut, tradingFee);
     }
 
     /*
      * @dev See {ISpotlightToken-sellToken}.
      */
-    function sellToken(uint256 tokenAmount, address recipient, uint256 minUSDCOut) external needInitialized {
+    function sellToken(uint256 tokenAmount, address recipient, uint256 minIPOut, MarketType expectedMarketType)
+        external
+        needInitialized
+    {
+        if (_marketType != expectedMarketType) revert InvalidMarketType();
+        if (recipient == address(0)) revert AddressZero();
         if (tokenAmount > balanceOf(msg.sender)) {
-            revert("SpotlightToken: Insufficient balance");
+            revert InsufficientLiquidity();
         }
 
-        uint256 tokenIn = tokenAmount;
-        uint256 usdcOut;
-        uint256 tradingFee;
-
-        uint256 usdcOutQuote = getTokenSellQuote(tokenIn);
-        tradingFee = (usdcOutQuote * PROTOCOL_TRADING_FEE_PCT) / 100;
-        usdcOut = usdcOutQuote - tradingFee;
-        if (usdcOut < minUSDCOut) {
-            revert("SpotlightToken: Slippage limit exceeded");
+        uint256 truePayoutSize;
+        uint256 payoutAfterFee;
+        if (_marketType == MarketType.PIPERX_POOL) {
+            truePayoutSize = _handleUniswapSell(tokenAmount, minIPOut);
+            payoutAfterFee = truePayoutSize;
         }
 
-        _sell(msg.sender, recipient, usdcOut, tokenIn, tradingFee);
+        if (_marketType == MarketType.BONDING_CURVE) {
+            truePayoutSize = _handleBondingCurveSell(tokenAmount, minIPOut);
+            uint256 fee = _calculateFee(truePayoutSize, TOTAL_FEE_BPS);
+            payoutAfterFee = truePayoutSize - fee;
+            _disperseFees(fee, msg.sender);
+
+            emit SpotlightTokenSold(
+                msg.sender, recipient, payoutAfterFee, fee, truePayoutSize, tokenAmount, totalSupply()
+            );
+        }
+
+        (bool success,) = recipient.call{value: payoutAfterFee}("");
+        if (!success) revert EthTransferFailed();
+    }
+
+    receive() external payable {
+        if (msg.sender == _baseToken) {
+            return;
+        }
+
+        buyWithIP(msg.sender, 0, _marketType);
     }
 
     /*
-     * @dev See {ISpotlightToken-getUSDCBuyQuote}.
+     * @dev See {ISpotlightToken-getIPBuyQuote}.
      */
-    function getUSDCBuyQuote(uint256 usdcOrderSize) public view needInitialized returns (uint256 tokensOut) {
-        tokensOut = ISpotlightBondingCurve(_bondingCurve).getBaseTokenBuyQuote(totalSupply(), usdcOrderSize);
+    function getIPBuyQuote(uint256 ipOrderSize) public view needInitialized returns (uint256 tokensOut) {
+        if (_marketType == MarketType.PIPERX_POOL) revert InvalidMarketType();
+        tokensOut = ISpotlightBondingCurve(_bondingCurve).getBaseTokenBuyQuote(totalSupply(), ipOrderSize);
     }
 
     /*
      * @dev See {ISpotlightToken-getTokenBuyQuote}.
      */
-    function getTokenBuyQuote(uint256 tokenOrderSize) public view needInitialized returns (uint256 usdcIn) {
-        usdcIn = ISpotlightBondingCurve(_bondingCurve).getTargetTokenBuyQuote(totalSupply(), tokenOrderSize);
+    function getTokenBuyQuote(uint256 tokenOrderSize) public view needInitialized returns (uint256 ipIn) {
+        if (_marketType == MarketType.PIPERX_POOL) revert InvalidMarketType();
+        ipIn = ISpotlightBondingCurve(_bondingCurve).getTargetTokenBuyQuote(totalSupply(), tokenOrderSize);
     }
 
     /*
      * @dev See {ISpotlightToken-getTokenSellQuote}.
      */
-    function getTokenSellQuote(uint256 tokenOrderSize) public view needInitialized returns (uint256 usdcOut) {
-        usdcOut = ISpotlightBondingCurve(_bondingCurve).getTargetTokenSellQuote(totalSupply(), tokenOrderSize);
+    function getTokenSellQuote(uint256 tokenOrderSize) public view needInitialized returns (uint256 ipOut) {
+        if (_marketType == MarketType.PIPERX_POOL) revert InvalidMarketType();
+        ipOut = ISpotlightBondingCurve(_bondingCurve).getTargetTokenSellQuote(totalSupply(), tokenOrderSize);
     }
 
     /*
-     * @dev See {ISpotlightToken-getUSDCBuyQuoteWithFee}.
+     * @dev See {ISpotlightToken-getIPBuyQuoteWithFee}.
      */
-    function getUSDCBuyQuoteWithFee(uint256 usdcOrderSize) public view needInitialized returns (uint256 tokensOut) {
-        uint256 tradingFee = (usdcOrderSize * PROTOCOL_TRADING_FEE_PCT) / 100;
-        uint256 realUSDCOrderSize = usdcOrderSize - tradingFee;
-        tokensOut = ISpotlightBondingCurve(_bondingCurve).getBaseTokenBuyQuote(totalSupply(), realUSDCOrderSize);
+    function getIPBuyQuoteWithFee(uint256 ipOrderSize) public view needInitialized returns (uint256 tokensOut) {
+        if (_marketType == MarketType.PIPERX_POOL) revert InvalidMarketType();
+
+        uint256 tradingFee = _calculateFee(ipOrderSize, TOTAL_FEE_BPS);
+        uint256 realIPOrderSize = ipOrderSize - tradingFee;
+        tokensOut = ISpotlightBondingCurve(_bondingCurve).getBaseTokenBuyQuote(totalSupply(), realIPOrderSize);
     }
 
     /*
      * @dev See {ISpotlightToken-getTokenBuyQuoteWithFee}.
      */
-    function getTokenBuyQuoteWithFee(uint256 tokenOrderSize) public view needInitialized returns (uint256 usdcIn) {
-        uint256 usdcNeeded = ISpotlightBondingCurve(_bondingCurve).getTargetTokenBuyQuote(totalSupply(), tokenOrderSize);
-        uint256 tradingFee = (usdcNeeded * PROTOCOL_TRADING_FEE_PCT) / 100;
-        usdcIn = usdcNeeded + tradingFee;
+    function getTokenBuyQuoteWithFee(uint256 tokenOrderSize) public view needInitialized returns (uint256 ipIn) {
+        if (_marketType == MarketType.PIPERX_POOL) revert InvalidMarketType();
+
+        uint256 ipNeeded = ISpotlightBondingCurve(_bondingCurve).getTargetTokenBuyQuote(totalSupply(), tokenOrderSize);
+        uint256 tradingFee = _calculateFee(ipNeeded, PROTOCOL_TRADING_FEE_PCT);
+
+        ipIn = ipNeeded + tradingFee;
     }
 
     /*
      * @dev See {ISpotlightToken-getTokenSellQuoteWithFee}.
      */
-    function getTokenSellQuoteWithFee(uint256 tokenOrderSize) public view needInitialized returns (uint256 usdcOut) {
-        uint256 usdcFromTrading =
+    function getTokenSellQuoteWithFee(uint256 tokenOrderSize) public view needInitialized returns (uint256 ipOut) {
+        if (_marketType == MarketType.PIPERX_POOL) revert InvalidMarketType();
+
+        uint256 ipFromTrading =
             ISpotlightBondingCurve(_bondingCurve).getTargetTokenSellQuote(totalSupply(), tokenOrderSize);
-        uint256 tradingFee = (usdcFromTrading * PROTOCOL_TRADING_FEE_PCT) / 100;
-        usdcOut = usdcFromTrading - tradingFee;
+        uint256 tradingFee = _calculateFee(ipFromTrading, PROTOCOL_TRADING_FEE_PCT);
+        ipOut = ipFromTrading - tradingFee;
     }
 
     // @dev Private functions
@@ -240,19 +338,120 @@ contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightToke
         require(_isInitialized, "SpotlightToken: Not initialized");
     }
 
-    function _buy(address buyer, address recipient, uint256 usdcIn, uint256 tokenOut, uint256 tradingFee) internal {
-        IERC20(_baseToken).transferFrom(buyer, address(this), usdcIn);
-        IERC20(_baseToken).transferFrom(buyer, _protocolFeeRecipient, tradingFee);
-        _mint(recipient, tokenOut);
+    function _handleBondingCurveSell(uint256 tokensToSell, uint256 minPayoutSize) private returns (uint256) {
+        uint256 payout = ISpotlightBondingCurve(_bondingCurve).getTargetTokenSellQuote(totalSupply(), tokensToSell);
 
-        emit SpotlightTokenBought(buyer, recipient, usdcIn + tradingFee, tradingFee, usdcIn, tokenOut, totalSupply());
+        if (payout < minPayoutSize) revert SlippageBoundsExceeded();
+        if (payout < MIN_IP_ORDER_SIZE) revert EthAmountTooSmall();
+
+        _burn(msg.sender, tokensToSell);
+
+        return payout;
     }
 
-    function _sell(address seller, address recipient, uint256 usdcOut, uint256 tokenIn, uint256 tradingFee) internal {
-        _burn(seller, tokenIn);
-        IERC20(_baseToken).transfer(_protocolFeeRecipient, tradingFee);
-        IERC20(_baseToken).transfer(recipient, usdcOut);
+    function _handleUniswapSell(uint256 tokensToSell, uint256 minPayoutSize) private returns (uint256) {
+        transfer(address(this), tokensToSell);
+        this.approve(address(_piperXRouter), tokensToSell);
 
-        emit SpotlightTokenSold(seller, recipient, usdcOut - tradingFee, tradingFee, usdcOut, tokenIn, totalSupply());
+        address[] memory path = new address[](2);
+        path[0] = address(this);
+        path[1] = _baseToken;
+
+        uint256[] memory amounts = IUniswapV2Router02(_piperXRouter).swapExactTokensForTokens(
+            tokensToSell, minPayoutSize, path, address(this), block.timestamp
+        );
+
+        uint256 payout = amounts[1];
+        IWETH(_baseToken).withdraw(payout);
+
+        return payout;
+    }
+
+    function _validateBondingCurveBuyToken(uint256 tokenAmount)
+        internal
+        returns (uint256 totalCost, uint256 trueOrderSize, uint256 fee, uint256 refund, bool startMarket)
+    {
+        fee = _calculateFee(msg.value, TOTAL_FEE_BPS);
+        uint256 remainingEth = msg.value - fee;
+
+        totalCost = getTokenBuyQuote(tokenAmount);
+
+        if (totalCost > remainingEth) revert EthAmountTooSmall();
+
+        uint256 maxRemainingTokens = BONDING_CURVE_SUPPLY - totalSupply();
+
+        trueOrderSize = tokenAmount;
+        if (trueOrderSize == maxRemainingTokens) {
+            startMarket = true;
+        }
+
+        if (trueOrderSize > maxRemainingTokens) {
+            trueOrderSize = maxRemainingTokens;
+            uint256 ethNeeded = getTokenBuyQuote(trueOrderSize);
+            fee = _calculateFee(ethNeeded, TOTAL_FEE_BPS);
+            totalCost = ethNeeded + fee;
+            if (msg.value > totalCost) {
+                refund = msg.value - totalCost;
+            }
+            startMarket = true;
+        }
+    }
+
+    function _validateBondingCurveBuy(uint256 minOrderSize)
+        internal
+        returns (uint256 totalCost, uint256 trueOrderSize, uint256 fee, uint256 refund, bool startMarket)
+    {
+        totalCost = msg.value;
+        fee = _calculateFee(totalCost, TOTAL_FEE_BPS);
+        uint256 remainingEth = totalCost - fee;
+
+        trueOrderSize = getIPBuyQuote(remainingEth);
+
+        if (trueOrderSize < minOrderSize) revert SlippageBoundsExceeded();
+        uint256 maxRemainingTokens = BONDING_CURVE_SUPPLY - totalSupply();
+
+        if (trueOrderSize == maxRemainingTokens) {
+            startMarket = true;
+        }
+
+        if (trueOrderSize > maxRemainingTokens) {
+            trueOrderSize = maxRemainingTokens;
+            uint256 ethNeeded = getTokenBuyQuote(trueOrderSize);
+            fee = _calculateFee(ethNeeded, TOTAL_FEE_BPS);
+            totalCost = ethNeeded + fee;
+            if (msg.value > totalCost) {
+                refund = msg.value - totalCost;
+            }
+            startMarket = true;
+        }
+    }
+
+    function _calculateFee(uint256 amount, uint256 bps) internal pure returns (uint256) {
+        return (amount * bps) / 100;
+    }
+
+    function _disperseFees(uint256 _fee, address _orderReferrer) internal {
+        uint256 tradingFee = _calculateFee(_fee, PROTOCOL_TRADING_FEE_PCT);
+        (bool success,) = _protocolFeeRecipient.call{value: tradingFee}("");
+        if (!success) revert EthTransferFailed();
+    }
+
+    function _graduateMarket() internal {
+        _marketType = MarketType.PIPERX_POOL;
+
+        uint256 ethLiquidity = address(this).balance;
+        IWETH(_baseToken).deposit{value: ethLiquidity}();
+        _mint(address(this), SECONDARY_MARKET_SUPPLY);
+
+        IERC20(_baseToken).approve(address(_piperXRouter), ethLiquidity);
+        IERC20(address(this)).approve(address(_piperXRouter), SECONDARY_MARKET_SUPPLY);
+
+        (uint256 amountToken, uint256 amountETH, uint256 liquidity) = IUniswapV2Router02(_piperXRouter).addLiquidity(
+            address(this), _baseToken, SECONDARY_MARKET_SUPPLY, ethLiquidity, 0, 0, address(this), block.timestamp
+        );
+
+        _pairAddress = IUniswapV2Factory(_piperXFactory).getPair(address(this), _baseToken);
+
+        emit SpotlightTokenGraduated(address(this), _pairAddress, amountETH, amountToken, liquidity, _marketType);
     }
 }
