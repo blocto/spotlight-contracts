@@ -12,7 +12,7 @@ import {StoryWorkflowStructs} from "./story-workflow-interfaces/StoryWorkflowStr
 import {IStoryDerivativeWorkflows} from "./story-workflow-interfaces/IStoryDerivativeWorkflows.sol";
 import {SpotlightTokenFactoryStorage} from "./SpotlightTokenFactoryStorage.sol";
 import {ISpotlightBondingCurve} from "../spotlight-bonding-curve/ISpotlightBondingCurve.sol";
-import {IWETH} from "./IWETH-interfaces/IWETH.sol";
+import {MarketType} from "../spotlight-token/ISpotlightToken.sol";
 
 contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStorage, ISpotlightTokenFactory {
     modifier needInitialized() {
@@ -42,7 +42,9 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
         address tokenBeacon_,
         address bondingCurve_,
         address baseToken_,
-        address storyDerivativeWorkflows_
+        address storyDerivativeWorkflows_,
+        address piperXRouter_,
+        address piperXFactory_
     ) external {
         if (isInitialized()) {
             revert("SpotlightTokenFactory: Already initialized");
@@ -56,6 +58,8 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
         _storyDerivativeWorkflows = storyDerivativeWorkflows_;
 
         _isInitialized = true;
+        _piperXRouter = piperXRouter_;
+        _piperXFactory = piperXFactory_;
     }
 
     /**
@@ -253,7 +257,9 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
             _baseToken,
             owner(),
             tokenCreationData.tokenName,
-            tokenCreationData.tokenSymbol
+            tokenCreationData.tokenSymbol,
+            _piperXRouter,
+            _piperXFactory
         );
         if (tokenAddress != tokenCreationData.predeployedTokenAddress) {
             revert("The address of the created token does not match the predeployed address");
@@ -264,9 +270,10 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
     // @todo: wait until the buyToken function is implemented
     function _initalBuy(address tokenAddress, IntialBuyData memory initialBuyData) internal {
         if (initialBuyData.initialBuyAmount == 0) return;
+        return;
 
         ISpotlightToken(tokenAddress).buyToken(
-            initialBuyData.initialBuyAmount, initialBuyData.initialBuyRecipient, type(uint256).max
+            initialBuyData.initialBuyAmount, initialBuyData.initialBuyRecipient, MarketType.BONDING_CURVE
         );
     }
 

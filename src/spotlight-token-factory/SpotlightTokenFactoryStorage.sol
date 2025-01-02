@@ -15,4 +15,8 @@ abstract contract SpotlightTokenFactoryStorage {
 
     bool internal _isInitialized;
     // @dev end of v1 properties
+    // @dev v2 properties
+    address internal _piperXRouter;
+    address internal _piperXFactory;
+    // @dev end of v2 properties
 }

@@ -76,7 +76,9 @@ interface ISpotlightTokenFactory {
         address tokenBeacon_,
         address bondingCurve_,
         address baseToken_,
-        address storyDerivativeWorkflows_
+        address storyDerivativeWorkflows_,
+        address piperXRouter_,
+        address piperXFactory_
     ) external;
 
     /**
