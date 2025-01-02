@@ -68,7 +68,7 @@ contract SpotlightTokenTest is Test {
             predeployedTokenAddress: predeployedTokenAddress
         });
         ISpotlightTokenFactory.IntialBuyData memory initialBuyData =
-            ISpotlightTokenFactory.IntialBuyData({initialBuyAmount: 1, initialBuyRecipient: _tokenCreator});
+            ISpotlightTokenFactory.IntialBuyData({initialBuyAmount: 0, initialBuyRecipient: _tokenCreator});
         (
             StoryWorkflowStructs.MakeDerivative memory makeDerivative,
             StoryWorkflowStructs.IPMetadata memory ipMetadata,
@@ -116,6 +116,16 @@ contract SpotlightTokenTest is Test {
         // tokenContract should disperse the fee to the protocolFeeRecipient
         assertEq(address(_factoryOwner).balance, expectedFactoryOwnerBalance);
     }
+
+    // function testBuyWithIPShouldEmitSpotlightTokenBoughtInBondingCurvePhase() public {
+    //     uint256 USER_BUY_AMOUNT = 1 ether;
+
+    //     vm.deal(_buyer, USER_BUY_AMOUNT);
+    //     vm.startPrank(_buyer);
+    //     _token.buyWithIP{value: USER_BUY_AMOUNT}(_buyer, 0, MarketType.BONDING_CURVE);
+    //     vm.stopPrank();
+
+    // }
 
     function testBuyWithIPSuccessGraduateMarketInBondingCurvePhase() public {
         uint256 USER_BUY_AMOUNT = 3 ether;

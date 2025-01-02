@@ -183,7 +183,7 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
             tokenIpCollection(), tokenCreationData.tokenIpNFTId, derivData, ipMetadata, sigMetadata, sigRegister
         );
 
-        _initalBuy(msg.sender, initialBuyData);
+        _initalBuy(tokenAddress, initialBuyData);
         _chargeCreationFee(msg.sender);
         _numbersOfTokensCreated[msg.sender] += 1;
 
@@ -267,13 +267,14 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
         return tokenAddress;
     }
 
-    // @todo: wait until the buyToken function is implemented
     function _initalBuy(address tokenAddress, IntialBuyData memory initialBuyData) internal {
         if (initialBuyData.initialBuyAmount == 0) return;
-        return;
+        if (msg.value < initialBuyData.initialBuyAmount) {
+            revert("SpotlightTokenFactory: Insufficient initial buy amount");
+        }
 
-        ISpotlightToken(tokenAddress).buyToken(
-            initialBuyData.initialBuyAmount, initialBuyData.initialBuyRecipient, MarketType.BONDING_CURVE
+        ISpotlightToken(tokenAddress).buyWithIP{value: initialBuyData.initialBuyAmount}(
+            initialBuyData.initialBuyRecipient, 0, MarketType.BONDING_CURVE
         );
     }
 
@@ -288,9 +289,7 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
         // Return excess ETH if sent more than required
         if (msg.value > fee) {
             (bool success,) = tokenCreator.call{value: msg.value - fee}("");
-            if (!success) {
-                revert("SpotlightTokenFactory: Failed to return excess fee");
-            }
+            require(success, "SpotlightTokenFactory: Failed to return excess fee");
         }
     }
 }
