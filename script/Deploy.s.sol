@@ -30,6 +30,10 @@ contract Deploy is Script {
     address private _STORY_DERIVATIVE_WORKFLOWS_ADDRESS = 0xa8815CEB96857FFb8f5F8ce920b1Ae6D70254C7B;
     address private _SPOTLIGHT_TOKEN_FACTORY_OWNER = 0x582d6944a8EA7e4ACD385D18DC95CF5915510289;
 
+    address private constant WRAPPER_IP = 0xe8CabF9d1FFB6CE23cF0a86641849543ec7BD7d5;
+    address private constant PIPERX_V2_ROUTER = 0x8812d810EA7CC4e1c3FB45cef19D6a7ECBf2D85D;
+    address private constant PIPERX_V2_FACTORY = 0x700722D24f9256Be288f56449E8AB1D27C4a70ca;
+
     function run() public {
         vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
         // @dev deploy spotlight token faucet contract (SUSDC)
@@ -68,7 +72,9 @@ contract Deploy is Script {
             address(spotlightTokenBeacon), // tokenBeacon_
             address(bondingCurve), // bondingCurve_
             _SUSDCTokenAddr, // baseToken_
-            _STORY_DERIVATIVE_WORKFLOWS_ADDRESS // storyDerivativeWorkflows_
+            _STORY_DERIVATIVE_WORKFLOWS_ADDRESS, // storyDerivativeWorkflows_
+            PIPERX_V2_ROUTER, // piperxV2Router_
+            PIPERX_V2_FACTORY // piperxV2Factory_
         );
         tokenIpCollection.setTokenFactory(address(factoryProxy));
         vm.stopBroadcast();

@@ -371,12 +371,12 @@ contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightToke
         internal
         returns (uint256 totalCost, uint256 trueOrderSize, uint256 fee, uint256 refund, bool startMarket)
     {
-        fee = _calculateFee(msg.value, TOTAL_FEE_BPS);
-        uint256 remainingEth = msg.value - fee;
+        uint256 ipIn = getTokenBuyQuote(tokenAmount);
+        fee = _calculateFee(ipIn, TOTAL_FEE_BPS);
 
-        totalCost = getTokenBuyQuote(tokenAmount);
-
-        if (totalCost > remainingEth) revert EthAmountTooSmall();
+        totalCost = ipIn + fee;
+        
+        if (totalCost > msg.value) revert EthAmountTooSmall();
 
         uint256 maxRemainingTokens = BONDING_CURVE_SUPPLY - totalSupply();
 
@@ -431,8 +431,7 @@ contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightToke
     }
 
     function _disperseFees(uint256 _fee, address _orderReferrer) internal {
-        uint256 tradingFee = _calculateFee(_fee, PROTOCOL_TRADING_FEE_PCT);
-        (bool success,) = _protocolFeeRecipient.call{value: tradingFee}("");
+        (bool success,) = _protocolFeeRecipient.call{value: _fee}("");
         if (!success) revert EthTransferFailed();
     }
 

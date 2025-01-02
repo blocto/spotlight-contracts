@@ -167,6 +167,5 @@ contract SpotlightTokenFactoryTest is Test {
             tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister
         );
         vm.stopPrank();
-
     }
 }
