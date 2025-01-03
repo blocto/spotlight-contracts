@@ -11,8 +11,15 @@ import {IWETH} from "../interfaces/IWETH.sol";
 import {IUniswapV2Router02} from "../interfaces/IUniswapV2Router02.sol";
 import {IUniswapV2Factory} from "../interfaces/IUniswapV2Factory.sol";
 import {MarketType, MarketState} from "./ISpotlightToken.sol";
+import {ReentrancyGuard} from "./ReentrancyGuard.sol";
 
-contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightTokenStorage, ISpotlightToken {
+contract SpotlightToken is
+    BeaconProxyStorage,
+    InitializableERC20,
+    ReentrancyGuard,
+    SpotlightTokenStorage,
+    ISpotlightToken
+{
     constructor() InitializableERC20() {}
 
     modifier needInitialized() {
@@ -62,6 +69,8 @@ contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightToke
         _marketType = MarketType.BONDING_CURVE;
         _piperXRouter = piperXRouter_;
         _piperXFactory = piperXFactory_;
+
+        __ReentrancyGuard_init();
     }
 
     /*
@@ -123,6 +132,7 @@ contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightToke
         public
         payable
         needInitialized
+        nonReentrant
     {
         if (_marketType != expectedMarketType) revert InvalidMarketType();
         if (msg.value < MIN_IP_ORDER_SIZE) revert EthAmountTooSmall();
@@ -177,6 +187,7 @@ contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightToke
         external
         payable
         needInitialized
+        nonReentrant
     {
         if (_marketType != expectedMarketType) revert InvalidMarketType();
         if (msg.value < MIN_IP_ORDER_SIZE) revert EthAmountTooSmall();
@@ -233,6 +244,7 @@ contract SpotlightToken is BeaconProxyStorage, InitializableERC20, SpotlightToke
     function sellToken(uint256 tokenAmount, address recipient, uint256 minIPOut, MarketType expectedMarketType)
         external
         needInitialized
+        nonReentrant
     {
         if (_marketType != expectedMarketType) revert InvalidMarketType();
         if (recipient == address(0)) revert AddressZero();
