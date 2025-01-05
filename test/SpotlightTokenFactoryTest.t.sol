@@ -266,10 +266,29 @@ contract SpotlightTokenFactoryTest is Test {
         assertEq(predeployedTokenAddress.balance, expectedPredeployedTokenBalance);
     }
 
-    // todo: 測試 claimFee
-    function testClaimFeeSuccess() public {}
-    // todo: 測試 non owner claimFee
-    function testClaimFeeRevertWhenNonOwner() public {}
+    function testClaimFeeSuccess() public {
+        uint256 FACTORY_BALANCE = 1 ether;
+
+        vm.deal(address(_factory), FACTORY_BALANCE);
+        vm.startPrank(_factoryOwner);
+        _factory.claimFee(address(_factoryOwner));
+        vm.stopPrank();
+
+        assertEq(address(_factoryOwner).balance, FACTORY_BALANCE);
+        assertEq(address(_factory).balance, 0);
+    }
+
+    function testClaimFeeRevertWhenNonOwner() public {
+        uint256 FACTORY_BALANCE = 1 ether;
+
+        vm.deal(address(_factory), FACTORY_BALANCE);
+        address nonOwner = makeAddr("nonOwner");
+
+        vm.startPrank(nonOwner);
+        vm.expectRevert("SpotlightTokenFactory: Not owner");
+        _factory.claimFee(address(nonOwner));
+        vm.stopPrank();
+    }
 
     function _getDummyStructs(address tokenCreator, uint256 initialBuyAmount)
         internal

@@ -219,7 +219,8 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
      * @dev See {ISpotlightTokenFactory-claimFee}.
      */
     function claimFee(address recipient) external onlyOwner {
-        IERC20(_creationFeeToken).transfer(recipient, IERC20(_creationFeeToken).balanceOf(address(this)));
+        (bool success,) = recipient.call{value: address(this).balance}("");
+        require(success, "SpotlightTokenFactory: Failed to claim fee");
     }
 
     // @dev - private functions
