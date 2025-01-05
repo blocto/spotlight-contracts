@@ -183,8 +183,7 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
             tokenIpCollection(), tokenCreationData.tokenIpNFTId, derivData, ipMetadata, sigMetadata, sigRegister
         );
 
-        _initalBuy(tokenAddress, initialBuyData);
-        _chargeCreationFee(msg.sender);
+        _distributeFeesAndInitialBuy(tokenAddress, initialBuyData);
         _numbersOfTokensCreated[msg.sender] += 1;
 
         emit SpotlightTokenCreated(
@@ -267,29 +266,30 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
         return tokenAddress;
     }
 
+    function _distributeFeesAndInitialBuy(address tokenAddress, IntialBuyData memory initialBuyData) internal {
+        uint256 totalRequired = initialBuyData.initialBuyAmount + createTokenFee();
+        require(msg.value >= totalRequired, "SpotlightTokenFactory: Insufficient total amount");
+
+        _initalBuy(tokenAddress, initialBuyData);
+        _chargeCreationFee(msg.sender, totalRequired);
+    }
+
     function _initalBuy(address tokenAddress, IntialBuyData memory initialBuyData) internal {
         if (initialBuyData.initialBuyAmount == 0) return;
-        if (msg.value < initialBuyData.initialBuyAmount) {
-            revert("SpotlightTokenFactory: Insufficient initial buy amount");
-        }
 
         ISpotlightToken(tokenAddress).buyWithIP{value: initialBuyData.initialBuyAmount}(
             initialBuyData.initialBuyRecipient, 0, MarketType.BONDING_CURVE
         );
     }
 
-    function _chargeCreationFee(address tokenCreator) internal {
+    function _chargeCreationFee(address tokenCreator, uint256 totalRequired) internal {
         uint256 fee = createTokenFee();
         if (fee == 0) return;
 
-        if (msg.value < fee) {
-            revert("SpotlightTokenFactory: Insufficient creation fee");
-        }
+        uint256 excess = msg.value - totalRequired;
+        if (excess == 0) return;
 
-        // Return excess ETH if sent more than required
-        if (msg.value > fee) {
-            (bool success,) = tokenCreator.call{value: msg.value - fee}("");
-            require(success, "SpotlightTokenFactory: Failed to return excess fee");
-        }
+        (bool success,) = tokenCreator.call{value: excess}("");
+        require(success, "SpotlightTokenFactory: Failed to return excess fee");
     }
 }

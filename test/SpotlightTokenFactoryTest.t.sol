@@ -10,6 +10,7 @@ import {ISpotlightTokenFactory} from "../src/spotlight-token-factory/ISpotlightT
 import {StoryWorkflowStructs} from "../src/spotlight-token-factory/story-workflow-interfaces/StoryWorkflowStructs.sol";
 import {SpotlightNativeBondingCurve} from "../src/spotlight-bonding-curve/SpotlightNativeBondingCurve.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract SpotlightTokenFactoryTest is Test {
     address private _factoryOwner;
@@ -141,21 +142,159 @@ contract SpotlightTokenFactoryTest is Test {
         assertTrue(tokenAddress1 != tokenAddress2);
     }
 
-    function testCreateToken() public {
+    function testCreateTokenSuccess() public {
+        uint256 FACTORY_BALANCE_BEFORE = address(_factory).balance;
+        uint256 expectedFactoryBalance = FACTORY_BALANCE_BEFORE + DEFAULT_CREATION_FEE;
+
         address tokenCreator = makeAddr("tokenCreator");
-        vm.deal(tokenCreator, 2 ether);
+        vm.deal(tokenCreator, 1 ether + DEFAULT_CREATION_FEE);
+
+        uint256 TOKEN_CREATOR_BALANCE_BEFORE = tokenCreator.balance;
+        uint256 expectedTokenCreatorBalance = TOKEN_CREATOR_BALANCE_BEFORE - DEFAULT_CREATION_FEE;
+
         vm.startPrank(tokenCreator);
 
-        address predeployedTokenAddress = _factory.calculateTokenAddress(tokenCreator);
+        (
+            address predeployedTokenAddress,
+            ISpotlightTokenFactory.TokenCreationData memory tokenCreationData,
+            ISpotlightTokenFactory.IntialBuyData memory initialBuyData,
+            StoryWorkflowStructs.MakeDerivative memory makeDerivative,
+            StoryWorkflowStructs.IPMetadata memory ipMetadata,
+            StoryWorkflowStructs.SignatureData memory sigMetadata,
+            StoryWorkflowStructs.SignatureData memory sigRegister,
+            address mockReturnAddress
+        ) = _getDummyStructs(tokenCreator, 0);
 
+        vm.expectEmit(false, false, false, true);
+        emit MockStoryDerivativeWorkflows.RegisterCalled(
+            address(_factory.tokenIpCollection()), tokenCreationData.tokenIpNFTId
+        );
+
+        vm.expectEmit(false, false, false, true);
+        emit ISpotlightTokenFactory.SpotlightTokenCreated(
+            predeployedTokenAddress,
+            mockReturnAddress,
+            tokenCreator,
+            tokenCreationData.tokenName,
+            tokenCreationData.tokenSymbol,
+            tokenCreationData.tokenIpNFTId,
+            initialBuyData.initialBuyAmount,
+            initialBuyData.initialBuyRecipient,
+            DEFAULT_CREATION_FEE,
+            address(_factory),
+            address(_bondingCurve)
+        );
+        _factory.createToken{value: tokenCreator.balance}(
+            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister
+        );
+        vm.stopPrank();
+
+        assertEq(address(_factory).balance, expectedFactoryBalance);
+        assertEq(tokenCreator.balance, expectedTokenCreatorBalance);
+        assertEq(_factory.numberOfTokensCreated(tokenCreator), 1);
+    }
+
+    function testCreateTokenSuccessWithInitialBuy() public {
+        uint256 INITIAL_BUY_AMOUNT = 1 ether;
+        uint256 SHOULD_REFUND_EXCESS_IP = 1 ether;
+        uint256 TOKEN_CREATOR_BALANCE = (DEFAULT_CREATION_FEE + INITIAL_BUY_AMOUNT + SHOULD_REFUND_EXCESS_IP);
+
+        uint256 expectedFactoryBalance = address(_factory).balance + DEFAULT_CREATION_FEE;
+        uint256 expectedFactoryOwnerBalance = INITIAL_BUY_AMOUNT * 1 / 100;
+        uint256 expectedTokenCreatorBalance = SHOULD_REFUND_EXCESS_IP;
+        uint256 expectedPredeployedTokenBalance = INITIAL_BUY_AMOUNT * 99 / 100;
+
+        address tokenCreator = makeAddr("tokenCreator");
+        vm.deal(tokenCreator, TOKEN_CREATOR_BALANCE);
+        vm.startPrank(tokenCreator);
+
+        (
+            address predeployedTokenAddress,
+            ISpotlightTokenFactory.TokenCreationData memory tokenCreationData,
+            ISpotlightTokenFactory.IntialBuyData memory initialBuyData,
+            StoryWorkflowStructs.MakeDerivative memory makeDerivative,
+            StoryWorkflowStructs.IPMetadata memory ipMetadata,
+            StoryWorkflowStructs.SignatureData memory sigMetadata,
+            StoryWorkflowStructs.SignatureData memory sigRegister,
+            address mockReturnAddress
+        ) = _getDummyStructs(tokenCreator, 1 ether);
+
+        _factory.createToken{value: TOKEN_CREATOR_BALANCE}(
+            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister
+        );
+        vm.stopPrank();
+
+        assertEq(address(_factory).balance, expectedFactoryBalance);
+        assertEq(tokenCreator.balance, expectedTokenCreatorBalance);
+        assertEq(_factoryOwner.balance, expectedFactoryOwnerBalance);
+        assertEq(predeployedTokenAddress.balance, expectedPredeployedTokenBalance);
+        assertEq(_factory.numberOfTokensCreated(tokenCreator), 1);
+    }
+
+    function testCreateTokenRevertWhenInsufficientBalanceWithInitialBuy() public {
+        uint256 INITIAL_BUY_AMOUNT = 0.9 ether;
+        uint256 TOKEN_CREATOR_BALANCE = (DEFAULT_CREATION_FEE + INITIAL_BUY_AMOUNT);
+        uint256 EXCESS_INITIAL_BUY_AMOUNT = 1 ether;
+
+        uint256 expectedFactoryBalance = address(_factory).balance;
+        uint256 expectedFactoryOwnerBalance = 0;
+        uint256 expectedPredeployedTokenBalance = 0;
+
+        address tokenCreator = makeAddr("tokenCreator");
+        vm.deal(tokenCreator, TOKEN_CREATOR_BALANCE);
+        vm.startPrank(tokenCreator);
+
+        (
+            address predeployedTokenAddress,
+            ISpotlightTokenFactory.TokenCreationData memory tokenCreationData,
+            ISpotlightTokenFactory.IntialBuyData memory initialBuyData,
+            StoryWorkflowStructs.MakeDerivative memory makeDerivative,
+            StoryWorkflowStructs.IPMetadata memory ipMetadata,
+            StoryWorkflowStructs.SignatureData memory sigMetadata,
+            StoryWorkflowStructs.SignatureData memory sigRegister,
+            address mockReturnAddress
+        ) = _getDummyStructs(tokenCreator, EXCESS_INITIAL_BUY_AMOUNT);
+
+        vm.expectRevert("SpotlightTokenFactory: Insufficient total amount");
+        _factory.createToken{value: TOKEN_CREATOR_BALANCE}(
+            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister
+        );
+        vm.stopPrank();
+
+        assertEq(address(_factory).balance, expectedFactoryBalance);
+        assertEq(_factoryOwner.balance, expectedFactoryOwnerBalance);
+        assertEq(predeployedTokenAddress.balance, expectedPredeployedTokenBalance);
+    }
+
+    // todo: 測試 claimFee
+    function testClaimFeeSuccess() public {}
+    // todo: 測試 non owner claimFee
+    function testClaimFeeRevertWhenNonOwner() public {}
+
+    function _getDummyStructs(address tokenCreator, uint256 initialBuyAmount)
+        internal
+        returns (
+            address,
+            ISpotlightTokenFactory.TokenCreationData memory,
+            ISpotlightTokenFactory.IntialBuyData memory,
+            StoryWorkflowStructs.MakeDerivative memory,
+            StoryWorkflowStructs.IPMetadata memory,
+            StoryWorkflowStructs.SignatureData memory,
+            StoryWorkflowStructs.SignatureData memory,
+            address
+        )
+    {
+        address predeployedTokenAddress = _factory.calculateTokenAddress(tokenCreator);
         ISpotlightTokenFactory.TokenCreationData memory tokenCreationData = ISpotlightTokenFactory.TokenCreationData({
             tokenIpNFTId: 1,
             tokenName: "Test Token",
             tokenSymbol: "TEST",
             predeployedTokenAddress: predeployedTokenAddress
         });
-        ISpotlightTokenFactory.IntialBuyData memory initialBuyData =
-            ISpotlightTokenFactory.IntialBuyData({initialBuyAmount: 1, initialBuyRecipient: tokenCreator});
+        ISpotlightTokenFactory.IntialBuyData memory initialBuyData = ISpotlightTokenFactory.IntialBuyData({
+            initialBuyAmount: initialBuyAmount,
+            initialBuyRecipient: tokenCreator
+        });
         (
             StoryWorkflowStructs.MakeDerivative memory makeDerivative,
             StoryWorkflowStructs.IPMetadata memory ipMetadata,
@@ -163,9 +302,18 @@ contract SpotlightTokenFactoryTest is Test {
             StoryWorkflowStructs.SignatureData memory sigRegister
         ) = _mockStoryWorkflows.getMockStructs();
 
-        _factory.createToken{value: DEFAULT_CREATION_FEE}(
-            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister
+        address mockReturnAddress = makeAddr("mockReturnAddress");
+        _mockStoryWorkflows.setMockReturnAddress(mockReturnAddress);
+
+        return (
+            predeployedTokenAddress,
+            tokenCreationData,
+            initialBuyData,
+            makeDerivative,
+            ipMetadata,
+            sigMetadata,
+            sigRegister,
+            mockReturnAddress
         );
-        vm.stopPrank();
     }
 }
