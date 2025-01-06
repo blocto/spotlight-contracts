@@ -167,7 +167,12 @@ contract SpotlightTokenFactoryTest is Test {
 
         vm.expectEmit(false, false, false, true);
         emit MockStoryDerivativeWorkflows.RegisterCalled(
-            address(_factory.tokenIpCollection()), tokenCreationData.tokenIpNFTId, makeDerivative, ipMetadata, sigMetadata, sigRegister
+            address(_factory.tokenIpCollection()),
+            tokenCreationData.tokenIpNFTId,
+            makeDerivative,
+            ipMetadata,
+            sigMetadata,
+            sigRegister
         );
 
         vm.expectEmit(false, false, false, true);

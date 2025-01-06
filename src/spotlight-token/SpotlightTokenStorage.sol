@@ -30,5 +30,5 @@ abstract contract SpotlightTokenStorage {
 
     uint256 public constant SPECIFIC_ADDRESS_FEE_PCT = 1_000; // 10%
     uint256 public constant LISTING_FEE = 0.1 ether;
-        // @dev end of v2 properties
+    // @dev end of v2 properties
 }
