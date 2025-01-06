@@ -51,7 +51,8 @@ contract SpotlightToken is
         string memory tokenName_,
         string memory tokenSymbol_,
         address piperXRouter_,
-        address piperXFactory_
+        address piperXFactory_,
+        address specificAddress_
     ) external {
         if (isInitialized()) {
             revert("SpotlightToken: Already initialized");
@@ -69,7 +70,8 @@ contract SpotlightToken is
         _marketType = MarketType.BONDING_CURVE;
         _piperXRouter = piperXRouter_;
         _piperXFactory = piperXFactory_;
-
+        _specificAddress = specificAddress_;
+        
         __ReentrancyGuard_init();
     }
 
@@ -164,7 +166,7 @@ contract SpotlightToken is
             (totalCost, trueOrderSize, fee, refund, shouldGraduateMarket) = _validateBondingCurveBuy(minTokenOut);
 
             _mint(recipient, trueOrderSize);
-            _disperseFees(fee, msg.sender);
+            _disperseFees(fee);
             if (refund > 0) {
                 (bool success,) = recipient.call{value: refund}("");
                 if (!success) revert EthTransferFailed();
@@ -221,7 +223,7 @@ contract SpotlightToken is
             (totalCost, trueOrderSize, fee, refund, shouldGraduateMarket) = _validateBondingCurveBuyToken(tokenAmount);
 
             _mint(recipient, trueOrderSize);
-            _disperseFees(fee, msg.sender);
+            _disperseFees(fee);
 
             if (refund > 0) {
                 (bool success,) = recipient.call{value: refund}("");
@@ -262,7 +264,7 @@ contract SpotlightToken is
             truePayoutSize = _handleBondingCurveSell(tokenAmount, minIPOut);
             uint256 fee = _calculateFee(truePayoutSize, TOTAL_FEE_BPS);
             payoutAfterFee = truePayoutSize - fee;
-            _disperseFees(fee, msg.sender);
+            _disperseFees(fee);
 
             (bool success,) = recipient.call{value: payoutAfterFee}("");
             if (!success) revert EthTransferFailed();
@@ -323,7 +325,7 @@ contract SpotlightToken is
         if (_marketType == MarketType.PIPERX_POOL) revert InvalidMarketType();
 
         uint256 ipNeeded = ISpotlightBondingCurve(_bondingCurve).getTargetTokenBuyQuote(totalSupply(), tokenOrderSize);
-        uint256 tradingFee = _calculateFee(ipNeeded, PROTOCOL_TRADING_FEE_PCT);
+        uint256 tradingFee = _calculateFee(ipNeeded, TOTAL_FEE_BPS);
 
         ipIn = ipNeeded + tradingFee;
     }
@@ -336,7 +338,7 @@ contract SpotlightToken is
 
         uint256 ipFromTrading =
             ISpotlightBondingCurve(_bondingCurve).getTargetTokenSellQuote(totalSupply(), tokenOrderSize);
-        uint256 tradingFee = _calculateFee(ipFromTrading, PROTOCOL_TRADING_FEE_PCT);
+        uint256 tradingFee = _calculateFee(ipFromTrading, TOTAL_FEE_BPS);
         ipOut = ipFromTrading - tradingFee;
     }
 
@@ -435,12 +437,24 @@ contract SpotlightToken is
     }
 
     function _calculateFee(uint256 amount, uint256 bps) internal pure returns (uint256) {
-        return (amount * bps) / 100;
+        return (amount * bps) / 10_000;
     }
 
-    function _disperseFees(uint256 _fee, address _orderReferrer) internal {
-        (bool success,) = _protocolFeeRecipient.call{value: _fee}("");
-        if (!success) revert EthTransferFailed();
+    function _disperseFees(uint256 _fee) internal {
+        if (_specificAddress == address(0)) {
+            (bool success,) = _protocolFeeRecipient.call{value: _fee}("");
+            if (!success) revert EthTransferFailed();
+            return;
+        }
+
+        uint256 protocolFee = _calculateFee(_fee, PROTOCOL_TRADING_FEE_PCT);
+        uint256 specificAddressFee = _calculateFee(_fee, SPECIFIC_ADDRESS_FEE_PCT);
+
+        (bool protocolSuccess,) = _protocolFeeRecipient.call{value: protocolFee}("");
+        if (!protocolSuccess) revert EthTransferFailed();
+
+        (bool specificSuccess,) = _specificAddress.call{value: specificAddressFee}("");
+        if (!specificSuccess) revert EthTransferFailed();
     }
 
     function _graduateMarket() internal {

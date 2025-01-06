@@ -77,7 +77,7 @@ contract SpotlightTokenTest is Test {
         ) = _mockStoryWorkflows.getMockStructs();
 
         (_tokenAddress,) = _factory.createToken{value: DEFAULT_CREATION_FEE}(
-            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister
+            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister, address(0)
         );
         _token = SpotlightToken(payable(_tokenAddress));
         vm.stopPrank();

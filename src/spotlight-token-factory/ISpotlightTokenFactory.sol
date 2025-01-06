@@ -174,7 +174,8 @@ interface ISpotlightTokenFactory {
         StoryWorkflowStructs.MakeDerivative calldata derivData,
         StoryWorkflowStructs.IPMetadata calldata ipMetadata,
         StoryWorkflowStructs.SignatureData calldata sigMetadata,
-        StoryWorkflowStructs.SignatureData calldata sigRegister
+        StoryWorkflowStructs.SignatureData calldata sigRegister,
+        address specificAddress
     ) external payable returns (address tokenAddress, address ipId);
 
     /**

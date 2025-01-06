@@ -86,6 +86,9 @@ interface ISpotlightToken {
      * @param protocolFeeRecipient_ The address of the protocol fee recipient.
      * @param tokenName_ The name of the token.
      * @param tokenSymbol_ The symbol of the token.
+     * @param piperXRouter_ The address of the piperX router.
+     * @param piperXFactory_ The address of the piperX factory.
+     * @param specificAddress_ The address of the specific address.
      */
     function initialize(
         address owner_,
@@ -96,7 +99,8 @@ interface ISpotlightToken {
         string memory tokenName_,
         string memory tokenSymbol_,
         address piperXRouter_,
-        address piperXFactory_
+        address piperXFactory_,
+        address specificAddress_
     ) external;
 
     /**

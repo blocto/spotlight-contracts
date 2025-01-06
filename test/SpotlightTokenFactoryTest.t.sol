@@ -185,7 +185,7 @@ contract SpotlightTokenFactoryTest is Test {
             address(_bondingCurve)
         );
         _factory.createToken{value: tokenCreator.balance}(
-            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister
+            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister, address(0)
         );
         vm.stopPrank();
 
@@ -220,7 +220,7 @@ contract SpotlightTokenFactoryTest is Test {
         ) = _getDummyStructs(tokenCreator, 1 ether);
 
         _factory.createToken{value: TOKEN_CREATOR_BALANCE}(
-            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister
+            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister, address(0)
         );
         vm.stopPrank();
 
@@ -257,7 +257,7 @@ contract SpotlightTokenFactoryTest is Test {
 
         vm.expectRevert("SpotlightTokenFactory: Insufficient total amount");
         _factory.createToken{value: TOKEN_CREATOR_BALANCE}(
-            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister
+            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister, address(0)
         );
         vm.stopPrank();
 

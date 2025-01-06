@@ -173,9 +173,10 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
         StoryWorkflowStructs.MakeDerivative calldata derivData,
         StoryWorkflowStructs.IPMetadata calldata ipMetadata,
         StoryWorkflowStructs.SignatureData calldata sigMetadata,
-        StoryWorkflowStructs.SignatureData calldata sigRegister
+        StoryWorkflowStructs.SignatureData calldata sigRegister,
+        address specificAddress
     ) external payable needInitialized returns (address tokenAddress, address ipId) {
-        tokenAddress = _deploySpotlightToken(tokenCreationData, msg.sender);
+        tokenAddress = _deploySpotlightToken(tokenCreationData, msg.sender, specificAddress);
 
         ISpotlightTokenIPCollection(_tokenIpCollection).mint(msg.sender, tokenCreationData.tokenIpNFTId);
 
@@ -244,7 +245,7 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
         return keccak256(abi.encodePacked(account, numberOfTokensCreated(account)));
     }
 
-    function _deploySpotlightToken(TokenCreationData memory tokenCreationData, address creator)
+    function _deploySpotlightToken(TokenCreationData memory tokenCreationData, address creator, address specificAddress)
         internal
         returns (address)
     {
@@ -259,7 +260,8 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
             tokenCreationData.tokenName,
             tokenCreationData.tokenSymbol,
             _piperXRouter,
-            _piperXFactory
+            _piperXFactory,
+            specificAddress
         );
         if (tokenAddress != tokenCreationData.predeployedTokenAddress) {
             revert("The address of the created token does not match the predeployed address");
