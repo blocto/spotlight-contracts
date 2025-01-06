@@ -386,7 +386,7 @@ contract SpotlightToken is
 
         totalCost = ipIn + fee;
 
-        if (totalCost > msg.value) revert EthAmountTooSmall();
+        if (totalCost > msg.value) revert SlippageBoundsExceeded();
 
         uint256 maxRemainingTokens = BONDING_CURVE_SUPPLY - totalSupply();
 

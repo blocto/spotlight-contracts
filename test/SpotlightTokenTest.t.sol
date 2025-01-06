@@ -12,18 +12,25 @@ import {StoryWorkflowStructs} from "../src/spotlight-token-factory/story-workflo
 import {SpotlightNativeBondingCurve} from "../src/spotlight-bonding-curve/SpotlightNativeBondingCurve.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {IUniswapV2Router02} from "../src/interfaces/IUniswapV2Router02.sol";
+import {ISpotlightToken} from "../src/spotlight-token/ISpotlightToken.sol";
 
 contract SpotlightTokenTest is Test {
     address private constant WRAPPER_IP = 0xe8CabF9d1FFB6CE23cF0a86641849543ec7BD7d5;
     address private constant PIPERX_V2_ROUTER = 0x8812d810EA7CC4e1c3FB45cef19D6a7ECBf2D85D;
     address private constant PIPERX_V2_FACTORY = 0x700722D24f9256Be288f56449E8AB1D27C4a70ca;
-    uint256 private constant DEFAULT_CREATION_FEE = 1 ether;
+    uint256 private constant DEFAULT_CREATION_FEE = 0.1 ether;
+    uint256 public constant TOTAL_FEE_BPS = 100;
+    uint256 public constant BONDIGN_CURVE_SUPPLY = 800_000_000e18; // 0.8 billion
+    uint256 public constant MAX_TOTAL_SUPPLY = 1_000_000_000e18; // 1 billion
+    uint256 public constant GRADUATE_MARKET_AMOUNT = 3 ether;
+
 
     SpotlightTokenFactory private _factory;
     SpotlightTokenIPCollection private _tokenIpCollection;
     SpotlightNativeBondingCurve private _bondingCurve;
     UpgradeableBeacon private _spotlightTokenBeacon;
     SpotlightToken private _token;
+    SpotlightToken private _tokenCreatedWithSpecificAddress;
     MockStoryDerivativeWorkflows private _mockStoryWorkflows;
 
     address private _factoryOwner;
@@ -97,7 +104,7 @@ contract SpotlightTokenTest is Test {
 
     function testBuyWithIPSuccessInBondingCurvePhase() public {
         uint256 USER_BUY_AMOUNT = 1 ether;
-        uint256 PROTOCOL_TRADING_FEE = 0.01 ether; // should charge 1% of the buy amount
+        uint256 PROTOCOL_TRADING_FEE = _calculateFee(USER_BUY_AMOUNT, TOTAL_FEE_BPS);
         uint256 TOKEN_CONTRACT_BALANCE_BEFORE = address(_token).balance;
         uint256 FACTORY_OWNER_BALANCE_BEFORE = _factoryOwner.balance;
         uint256 expectedTokenReceived = _token.getIPBuyQuoteWithFee(USER_BUY_AMOUNT);
@@ -106,42 +113,38 @@ contract SpotlightTokenTest is Test {
 
         vm.deal(_buyer, USER_BUY_AMOUNT);
         vm.startPrank(_buyer);
+
+        vm.expectEmit(false, false, false, true);
+        emit ISpotlightToken.SpotlightTokenBought(
+            _buyer, _buyer, USER_BUY_AMOUNT, PROTOCOL_TRADING_FEE, USER_BUY_AMOUNT - PROTOCOL_TRADING_FEE, expectedTokenReceived, _token.totalSupply() + expectedTokenReceived
+        );
+        
         _token.buyWithIP{value: USER_BUY_AMOUNT}(_buyer, 0, MarketType.BONDING_CURVE);
         vm.stopPrank();
 
-        // buyer should receive the token
         assertEq(_token.balanceOf(_buyer), expectedTokenReceived);
-        // tokenContract should receive the IP
         assertEq(address(_token).balance, expectedContractIPBalance);
-        // tokenContract should disperse the fee to the protocolFeeRecipient
         assertEq(address(_factoryOwner).balance, expectedFactoryOwnerBalance);
     }
 
-    // function testBuyWithIPShouldEmitSpotlightTokenBoughtInBondingCurvePhase() public {
-    //     uint256 USER_BUY_AMOUNT = 1 ether;
-
-    //     vm.deal(_buyer, USER_BUY_AMOUNT);
-    //     vm.startPrank(_buyer);
-    //     _token.buyWithIP{value: USER_BUY_AMOUNT}(_buyer, 0, MarketType.BONDING_CURVE);
-    //     vm.stopPrank();
-
-    // }
-
     function testBuyWithIPSuccessGraduateMarketInBondingCurvePhase() public {
         uint256 USER_BUY_AMOUNT = 3 ether;
-        uint256 PROTOCOL_TRADING_FEE = 0.03 ether; // should charge 1% of the buy amount
-        uint256 expectedIPSpent = _bondingCurve.getTargetTokenBuyQuote(0, 800_000_000e18); // 2.157538343587446292 ether
+        uint256 PROTOCOL_TRADING_FEE = _calculateFee(USER_BUY_AMOUNT, TOTAL_FEE_BPS);
+        uint256 expectedIPSpent = _bondingCurve.getTargetTokenBuyQuote(0, BONDIGN_CURVE_SUPPLY);
         uint256 expectedRefundBuyerReceived = USER_BUY_AMOUNT - PROTOCOL_TRADING_FEE - expectedIPSpent;
 
         vm.deal(_buyer, USER_BUY_AMOUNT);
         vm.startPrank(_buyer);
+        vm.expectEmit(false, false, false, false); // only verify that the event was emitted, ignoring parameter values
+        emit ISpotlightToken.SpotlightTokenGraduated(address(0), address(0), 0, 0, 0, MarketType.PIPERX_POOL);
+        
         _token.buyWithIP{value: USER_BUY_AMOUNT}(_buyer, 0, MarketType.BONDING_CURVE);
         vm.stopPrank();
 
         MarketState memory state = _token.state();
 
         // token status check
-        assertEq(_token.totalSupply(), 1_000_000_000e18);
+        assertEq(_token.totalSupply(), MAX_TOTAL_SUPPLY);
         assertEq(address(_token).balance, 0);
 
         // marketType should be PIPERX_POOL
@@ -153,12 +156,10 @@ contract SpotlightTokenTest is Test {
     }
 
     function testBuyWithIPSuccessInPiperXPhase() public {
-        uint256 GRADUATE_MARKET_AMOUNT = 3 ether;
-
         address graduateMarket = makeAddr("graduateMarket");
         vm.deal(graduateMarket, GRADUATE_MARKET_AMOUNT);
         vm.startPrank(graduateMarket);
-        _token.buyWithIP{value: GRADUATE_MARKET_AMOUNT}(_buyer, 0, MarketType.BONDING_CURVE); // graduate market
+        _token.buyWithIP{value: GRADUATE_MARKET_AMOUNT}(_buyer, 0, MarketType.BONDING_CURVE);
         vm.stopPrank();
 
         MarketState memory state = _token.state();
@@ -176,24 +177,24 @@ contract SpotlightTokenTest is Test {
 
         vm.expectRevert(abi.encodeWithSelector(SpotlightToken.InvalidMarketType.selector));
         _token.buyWithIP{value: 1 ether}(
-            _buyer, // recipient
-            0, // minTokenOut
-            MarketType.PIPERX_POOL // wrong market type
+            _buyer,
+            0,
+            MarketType.PIPERX_POOL
         );
 
         vm.stopPrank();
     }
 
     function testBuyWithIPRevertsWhenAmountTooSmall() public {
-        uint256 insufficientAmount = 0.4 ether;
+        uint256 insufficientAmount = 0.00001 ether;
         vm.deal(_buyer, insufficientAmount);
         vm.startPrank(_buyer);
 
         vm.expectRevert(abi.encodeWithSelector(SpotlightToken.EthAmountTooSmall.selector));
         _token.buyWithIP{value: insufficientAmount}(
-            _buyer, // recipient
-            0, // minTokenOut
-            MarketType.BONDING_CURVE // expectedMarketType
+            _buyer,
+            0,
+            MarketType.BONDING_CURVE
         );
 
         vm.stopPrank();
@@ -205,9 +206,9 @@ contract SpotlightTokenTest is Test {
 
         vm.expectRevert(abi.encodeWithSelector(SpotlightToken.AddressZero.selector));
         _token.buyWithIP{value: 1 ether}(
-            address(0), // recipient
-            0, // minTokenOut
-            MarketType.BONDING_CURVE // expectedMarketType
+            address(0),
+            0,
+            MarketType.BONDING_CURVE
         );
 
         vm.stopPrank();
@@ -224,45 +225,51 @@ contract SpotlightTokenTest is Test {
         vm.stopPrank();
     }
 
-    // buyToken
     function testBuyTokenSuccessInBondingCurvePhase() public {
-        uint256 USER_BUY_TOKEN_AMOUNT = 400_000_000e18; // 10 percent of the bonding curve supply
+        uint256 USER_BUY_TOKEN_AMOUNT = 400_000_000e18;
         uint256 TOKEN_CONTRACT_BALANCE_BEFORE = address(_token).balance;
         uint256 FACTORY_OWNER_BALANCE_BEFORE = _factoryOwner.balance;
         uint256 ipIn = _token.getTokenBuyQuote(USER_BUY_TOKEN_AMOUNT);
-        uint256 protocolTradingFee = ipIn * 1 / 100;
+        uint256 protocolTradingFee = _calculateFee(ipIn, TOTAL_FEE_BPS);
         uint256 ipInWithFee = ipIn + protocolTradingFee;
         uint256 expectedContractIPBalance = TOKEN_CONTRACT_BALANCE_BEFORE + ipIn;
         uint256 expectedFactoryOwnerBalance = FACTORY_OWNER_BALANCE_BEFORE + protocolTradingFee;
 
         vm.deal(_buyer, ipInWithFee);
         vm.startPrank(_buyer);
+
+        vm.expectEmit(false, false, false, true);
+        emit ISpotlightToken.SpotlightTokenBought(
+            _buyer, _buyer, ipInWithFee, protocolTradingFee, ipInWithFee - protocolTradingFee, USER_BUY_TOKEN_AMOUNT, _token.totalSupply() + USER_BUY_TOKEN_AMOUNT
+        );
+        
         _token.buyToken{value: ipInWithFee}(USER_BUY_TOKEN_AMOUNT, _buyer, MarketType.BONDING_CURVE);
         vm.stopPrank();
 
-        // buyer should receive the token
         assertEq(_token.balanceOf(_buyer), USER_BUY_TOKEN_AMOUNT);
-        // tokenContract should receive the IP
         assertEq(address(_token).balance, expectedContractIPBalance);
-        // tokenContract should disperse the fee to the protocolFeeRecipient
         assertEq(address(_factoryOwner).balance, expectedFactoryOwnerBalance);
     }
 
     function testBuyTokenSuccessGraduateMarketInBondingCurvePhase() public {
-        uint256 USER_BUY_TOKEN_AMOUNT = 800_000_000e18; // 10 percent of the bonding curve supply
+        uint256 USER_BUY_TOKEN_AMOUNT = 800_000_000e18;
         uint256 ipInWithFee = _token.getTokenBuyQuoteWithFee(USER_BUY_TOKEN_AMOUNT);
         uint256 expectedRefundBuyerReceived = 1 ether;
         uint256 userBuyAmount = ipInWithFee + expectedRefundBuyerReceived;
 
         vm.deal(_buyer, userBuyAmount);
         vm.startPrank(_buyer);
+
+        vm.expectEmit(false, false, false, false);
+        emit ISpotlightToken.SpotlightTokenGraduated(address(0), address(0), 0, 0, 0, MarketType.PIPERX_POOL);
+        
         _token.buyToken{value: userBuyAmount}(USER_BUY_TOKEN_AMOUNT, _buyer, MarketType.BONDING_CURVE);
         vm.stopPrank();
 
         MarketState memory state = _token.state();
 
         // token status check
-        assertEq(_token.totalSupply(), 1_000_000_000e18);
+        assertEq(_token.totalSupply(), MAX_TOTAL_SUPPLY);
         assertEq(address(_token).balance, 0);
 
         // marketType should be PIPERX_POOL
@@ -274,7 +281,7 @@ contract SpotlightTokenTest is Test {
     }
 
     function testBuyTokenSuccessInPiperXPhase() public {
-        uint256 GRADUATE_TOKEN_AMOUNT = 800_000_000e18; // 10 percent of the bonding curve supply
+        uint256 GRADUATE_TOKEN_AMOUNT = BONDIGN_CURVE_SUPPLY;
         uint256 graduateIpInWithFee = _token.getTokenBuyQuoteWithFee(GRADUATE_TOKEN_AMOUNT);
 
         address graduateMarket = makeAddr("graduateMarket");
@@ -306,16 +313,16 @@ contract SpotlightTokenTest is Test {
 
         vm.expectRevert(abi.encodeWithSelector(SpotlightToken.InvalidMarketType.selector));
         _token.buyToken{value: 1 ether}(
-            tokenAmount, // minTokenOut
-            _buyer, // recipient
-            MarketType.PIPERX_POOL // wrong market type
+            tokenAmount,
+            _buyer,
+            MarketType.PIPERX_POOL
         );
 
         vm.stopPrank();
     }
 
     function testBuyTokenRevertsWhenAmountTooSmall() public {
-        uint256 insufficientAmount = 0.4 ether;
+        uint256 insufficientAmount = 0.00001 ether;
         uint256 tokenAmount = _token.getTokenBuyQuote(insufficientAmount);
 
         vm.deal(_buyer, insufficientAmount);
@@ -323,9 +330,9 @@ contract SpotlightTokenTest is Test {
 
         vm.expectRevert(abi.encodeWithSelector(SpotlightToken.EthAmountTooSmall.selector));
         _token.buyToken{value: insufficientAmount}(
-            tokenAmount, // minTokenOut
-            _buyer, // recipient
-            MarketType.BONDING_CURVE // expectedMarketType
+            tokenAmount,
+            _buyer,
+            MarketType.BONDING_CURVE
         );
 
         vm.stopPrank();
@@ -339,16 +346,27 @@ contract SpotlightTokenTest is Test {
 
         vm.expectRevert(abi.encodeWithSelector(SpotlightToken.AddressZero.selector));
         _token.buyToken{value: 1 ether}(
-            tokenAmount, // minTokenOut
-            address(0), // recipient
-            MarketType.BONDING_CURVE // wrong market type
+            tokenAmount,
+            address(0),
+            MarketType.BONDING_CURVE
         );
 
         vm.stopPrank();
     }
 
+    function testBuyTokenRevertsWhenSlippageExceeded() public {
+        vm.deal(_buyer, 1 ether);
+        vm.startPrank(_buyer);
+
+        uint256 tokenAmount = _token.getIPBuyQuoteWithFee(1.1 ether);
+        vm.expectRevert(abi.encodeWithSelector(SpotlightToken.SlippageBoundsExceeded.selector));
+        _token.buyToken{value: 1 ether}(tokenAmount, _buyer, MarketType.BONDING_CURVE);
+
+        vm.stopPrank();
+    }
+
     function testSellTokenSuccessInBondingCurvePhase() public {
-        uint256 USER_BUY_TOKEN_AMOUNT = 600_000_000e18; // 10 percent of the bonding curve supply
+        uint256 USER_BUY_TOKEN_AMOUNT = 600_000_000e18;
         uint256 ipInWithFee = _token.getTokenBuyQuoteWithFee(USER_BUY_TOKEN_AMOUNT);
 
         vm.deal(_buyer, ipInWithFee);
@@ -361,11 +379,17 @@ contract SpotlightTokenTest is Test {
         uint256 BUYER_BALANCE_BEFORE = _buyer.balance;
         uint256 USER_SELL_TOKEN_AMOUNT = 500_000_000e18;
         uint256 expectedBuyerTokenBalance = USER_BUY_TOKEN_AMOUNT - USER_SELL_TOKEN_AMOUNT;
-        uint256 ipOut = _token.getTokenSellQuoteWithFee(USER_SELL_TOKEN_AMOUNT);
-        uint256 expectedBuyerBalance = BUYER_BALANCE_BEFORE + ipOut;
-        console.log("ipOut", ipOut);
+        uint256 ipOut = _token.getTokenSellQuote(USER_SELL_TOKEN_AMOUNT);
+        uint256 fee = _calculateFee(ipOut, TOTAL_FEE_BPS);
+        uint256 expectedBuyerBalance = BUYER_BALANCE_BEFORE + ipOut - fee;
 
         vm.startPrank(_buyer);
+
+        vm.expectEmit(false, false, false, true);
+        emit ISpotlightToken.SpotlightTokenSold(
+            _buyer, _buyer, ipOut -fee, fee, ipOut, USER_SELL_TOKEN_AMOUNT, _token.totalSupply() - USER_SELL_TOKEN_AMOUNT
+        );
+        
         _token.sellToken(USER_SELL_TOKEN_AMOUNT, _buyer, 0, MarketType.BONDING_CURVE);
         vm.stopPrank();
 
@@ -374,7 +398,7 @@ contract SpotlightTokenTest is Test {
     }
 
     function testSellTokenSuccessInPiperXPhase() public {
-        uint256 GRADUATE_TOKEN_AMOUNT = 800_000_000e18;
+        uint256 GRADUATE_TOKEN_AMOUNT = BONDIGN_CURVE_SUPPLY;
         uint256 graduateIpInWithFee = _token.getTokenBuyQuoteWithFee(GRADUATE_TOKEN_AMOUNT);
 
         address graduateMarket = makeAddr("graduateMarket");
@@ -416,10 +440,10 @@ contract SpotlightTokenTest is Test {
 
         vm.expectRevert(abi.encodeWithSelector(SpotlightToken.InvalidMarketType.selector));
         _token.sellToken(
-            1_000_000_000e18, // tokenAmount
-            _buyer, // recipient
-            0, // minIpOut
-            MarketType.PIPERX_POOL // wrong market type
+            1_000_000_000e18,
+            _buyer,
+            0,
+            MarketType.PIPERX_POOL
         );
 
         vm.stopPrank();
@@ -431,14 +455,55 @@ contract SpotlightTokenTest is Test {
 
         vm.expectRevert(abi.encodeWithSelector(SpotlightToken.AddressZero.selector));
         _token.sellToken(
-            1_000_000_000e18, // tokenAmount
-            address(0), // recipient
-            0, // minIpOut
-            MarketType.BONDING_CURVE // wrong market type
+            1_000_000_000e18,
+            address(0),
+            0,
+            MarketType.BONDING_CURVE
         );
 
         vm.stopPrank();
     }
 
-    function testSellTokenRevertsWhenInsufficientLiquidity() public {}
+    function testSellTokenRevertsWhenInsufficientLiquidity() public {
+        uint256 USER_BUY_TOKEN_AMOUNT = 600_000_000e18;
+        uint256 ipInWithFee = _token.getTokenBuyQuoteWithFee(USER_BUY_TOKEN_AMOUNT);
+
+        vm.deal(_buyer, ipInWithFee);
+        vm.startPrank(_buyer);
+        _token.buyToken{value: ipInWithFee}(USER_BUY_TOKEN_AMOUNT, _buyer, MarketType.BONDING_CURVE);
+        vm.stopPrank();
+
+        assertEq(_token.balanceOf(_buyer), USER_BUY_TOKEN_AMOUNT);
+
+        uint256 USER_SELL_TOKEN_AMOUNT = USER_BUY_TOKEN_AMOUNT + 100_000_000e18;
+
+        vm.startPrank(_buyer);
+        vm.expectRevert(abi.encodeWithSelector(SpotlightToken.InsufficientLiquidity.selector));
+        _token.sellToken(USER_SELL_TOKEN_AMOUNT, _buyer, 0, MarketType.BONDING_CURVE);
+        vm.stopPrank();
+    }
+
+    function testSellTokenRevertsWhenSlippageExceeded() public {
+        uint256 USER_BUY_TOKEN_AMOUNT = 600_000_000e18;
+        uint256 ipInWithFee = _token.getTokenBuyQuoteWithFee(USER_BUY_TOKEN_AMOUNT);
+
+        vm.deal(_buyer, ipInWithFee);
+        vm.startPrank(_buyer);
+        _token.buyToken{value: ipInWithFee}(USER_BUY_TOKEN_AMOUNT, _buyer, MarketType.BONDING_CURVE);
+        vm.stopPrank();
+
+        assertEq(_token.balanceOf(_buyer), USER_BUY_TOKEN_AMOUNT);
+
+        uint256 USER_SELL_TOKEN_AMOUNT = USER_BUY_TOKEN_AMOUNT / 2;
+        uint256 exceededMinIpOut = _token.getTokenSellQuoteWithFee(USER_SELL_TOKEN_AMOUNT + 100_000_000e18);
+
+        vm.startPrank(_buyer);
+        vm.expectRevert(abi.encodeWithSelector(SpotlightToken.SlippageBoundsExceeded.selector));
+        _token.sellToken(USER_SELL_TOKEN_AMOUNT, _buyer, exceededMinIpOut, MarketType.BONDING_CURVE);
+        vm.stopPrank();
+    }
+
+    function _calculateFee(uint256 amount, uint256 bps) internal pure returns (uint256) {
+        return (amount * bps) / 10_000;
+    }
 }
