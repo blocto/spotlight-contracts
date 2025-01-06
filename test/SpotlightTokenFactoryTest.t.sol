@@ -167,7 +167,7 @@ contract SpotlightTokenFactoryTest is Test {
 
         vm.expectEmit(false, false, false, true);
         emit MockStoryDerivativeWorkflows.RegisterCalled(
-            address(_factory.tokenIpCollection()), tokenCreationData.tokenIpNFTId
+            address(_factory.tokenIpCollection()), tokenCreationData.tokenIpNFTId, makeDerivative, ipMetadata, sigMetadata, sigRegister
         );
 
         vm.expectEmit(false, false, false, true);
@@ -216,7 +216,6 @@ contract SpotlightTokenFactoryTest is Test {
             StoryWorkflowStructs.IPMetadata memory ipMetadata,
             StoryWorkflowStructs.SignatureData memory sigMetadata,
             StoryWorkflowStructs.SignatureData memory sigRegister,
-            address mockReturnAddress
         ) = _getDummyStructs(tokenCreator, 1 ether);
 
         _factory.createToken{value: TOKEN_CREATOR_BALANCE}(
@@ -252,7 +251,6 @@ contract SpotlightTokenFactoryTest is Test {
             StoryWorkflowStructs.IPMetadata memory ipMetadata,
             StoryWorkflowStructs.SignatureData memory sigMetadata,
             StoryWorkflowStructs.SignatureData memory sigRegister,
-            address mockReturnAddress
         ) = _getDummyStructs(tokenCreator, EXCESS_INITIAL_BUY_AMOUNT);
 
         vm.expectRevert("SpotlightTokenFactory: Insufficient total amount");

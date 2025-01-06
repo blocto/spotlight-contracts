@@ -16,7 +16,7 @@ contract MockStoryDerivativeWorkflows is IStoryDerivativeWorkflows, Test {
     StoryWorkflowStructs.SignatureData public mockSigMetadata;
     StoryWorkflowStructs.SignatureData public mockSigRegister;
 
-    event RegisterCalled(address collection, uint256 tokenId);
+    event RegisterCalled(address collection, uint256 tokenId, StoryWorkflowStructs.MakeDerivative derivData, StoryWorkflowStructs.IPMetadata ipMetadata, StoryWorkflowStructs.SignatureData sigMetadata, StoryWorkflowStructs.SignatureData sigRegister);
 
     constructor() {
         mockMakeDerivative = StoryWorkflowStructs.MakeDerivative({
@@ -66,7 +66,7 @@ contract MockStoryDerivativeWorkflows is IStoryDerivativeWorkflows, Test {
         StoryWorkflowStructs.SignatureData calldata sigRegister
     ) external returns (address) {
         callCount++;
-        emit RegisterCalled(collection, tokenId);
+        emit RegisterCalled(collection, tokenId, derivData, ipMetadata, sigMetadata, sigRegister);
         return mockReturnAddress;
     }
 }
