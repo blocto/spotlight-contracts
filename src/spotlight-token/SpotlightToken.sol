@@ -71,7 +71,7 @@ contract SpotlightToken is
         _piperXRouter = piperXRouter_;
         _piperXFactory = piperXFactory_;
         _specificAddress = specificAddress_;
-        
+
         __ReentrancyGuard_init();
     }
 
@@ -459,6 +459,9 @@ contract SpotlightToken is
 
     function _graduateMarket() internal {
         _marketType = MarketType.PIPERX_POOL;
+
+        (bool success,) = _protocolFeeRecipient.call{value: LISTING_FEE}("");
+        if (!success) revert EthTransferFailed();
 
         uint256 ethLiquidity = address(this).balance;
         IWETH(_baseToken).deposit{value: ethLiquidity}();
