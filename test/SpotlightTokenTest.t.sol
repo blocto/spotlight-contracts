@@ -18,12 +18,15 @@ contract SpotlightTokenTest is Test {
     address private constant WRAPPER_IP = 0xe8CabF9d1FFB6CE23cF0a86641849543ec7BD7d5;
     address private constant PIPERX_V2_ROUTER = 0x8812d810EA7CC4e1c3FB45cef19D6a7ECBf2D85D;
     address private constant PIPERX_V2_FACTORY = 0x700722D24f9256Be288f56449E8AB1D27C4a70ca;
+
+    // @dev following constants are from SpotlightTokenStorage
     uint256 private constant DEFAULT_CREATION_FEE = 0.1 ether;
     uint256 public constant TOTAL_FEE_BPS = 100;
     uint256 public constant BONDIGN_CURVE_SUPPLY = 800_000_000e18; // 0.8 billion
     uint256 public constant MAX_TOTAL_SUPPLY = 1_000_000_000e18; // 1 billion
     uint256 public constant GRADUATE_MARKET_AMOUNT = 3 ether;
-
+    uint256 public constant SPECIFIC_ADDRESS_FEE_PCT = 1_000; // 10%
+    uint256 public constant PROTOCOL_TRADING_FEE_PCT = 9_000; // 90%
 
     SpotlightTokenFactory private _factory;
     SpotlightTokenIPCollection private _tokenIpCollection;
@@ -37,12 +40,14 @@ contract SpotlightTokenTest is Test {
     address private _tokenCreator;
     address private _tokenAddress;
     address private _buyer;
+    address private _specificAddress;
 
     function setUp() public {
         _mockStoryWorkflows = new MockStoryDerivativeWorkflows();
         SpotlightToken spotlightTokenImpl = new SpotlightToken();
 
         _factoryOwner = makeAddr("factoryOwner");
+        _specificAddress = makeAddr("specificAddress");
         vm.startPrank(_factoryOwner);
         _factory = new SpotlightTokenFactory();
         _tokenIpCollection = new SpotlightTokenIPCollection(address(_factory));
@@ -66,14 +71,6 @@ contract SpotlightTokenTest is Test {
         vm.deal(_tokenCreator, 2 ether);
         vm.startPrank(_tokenCreator);
 
-        address predeployedTokenAddress = _factory.calculateTokenAddress(_tokenCreator);
-
-        ISpotlightTokenFactory.TokenCreationData memory tokenCreationData = ISpotlightTokenFactory.TokenCreationData({
-            tokenIpNFTId: 1,
-            tokenName: "Test Token",
-            tokenSymbol: "TEST",
-            predeployedTokenAddress: predeployedTokenAddress
-        });
         ISpotlightTokenFactory.IntialBuyData memory initialBuyData =
             ISpotlightTokenFactory.IntialBuyData({initialBuyAmount: 0, initialBuyRecipient: _tokenCreator});
         (
@@ -83,11 +80,35 @@ contract SpotlightTokenTest is Test {
             StoryWorkflowStructs.SignatureData memory sigRegister
         ) = _mockStoryWorkflows.getMockStructs();
 
+        address predeployedTokenAddress = _factory.calculateTokenAddress(_tokenCreator);
+        ISpotlightTokenFactory.TokenCreationData memory tokenCreationData = ISpotlightTokenFactory.TokenCreationData({
+            tokenIpNFTId: 1,
+            tokenName: "Test Token",
+            tokenSymbol: "TEST",
+            predeployedTokenAddress: predeployedTokenAddress
+        });
+
         (_tokenAddress,) = _factory.createToken{value: DEFAULT_CREATION_FEE}(
             tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister, address(0)
         );
         _token = SpotlightToken(payable(_tokenAddress));
+
+        
+        address predeployedTokenAddressWithSpecificAddress = _factory.calculateTokenAddress(_tokenCreator);
+        ISpotlightTokenFactory.TokenCreationData memory tokenCreationDataWithSpecificAddress = ISpotlightTokenFactory.TokenCreationData({
+            tokenIpNFTId: 2,
+            tokenName: "Test Token",
+            tokenSymbol: "TEST",
+            predeployedTokenAddress: predeployedTokenAddressWithSpecificAddress
+        });
+
+        address tokenAddressWithSpecificAddress;
+        (tokenAddressWithSpecificAddress,) = _factory.createToken{value: DEFAULT_CREATION_FEE}(
+            tokenCreationDataWithSpecificAddress, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister, _specificAddress
+        );
+        _tokenCreatedWithSpecificAddress = SpotlightToken(payable(tokenAddressWithSpecificAddress));
         vm.stopPrank();
+
 
         _buyer = makeAddr("buyer");
     }
@@ -153,6 +174,21 @@ contract SpotlightTokenTest is Test {
 
         // buyer should receive a refund if the market graduates and the user's buy amount exceeds the maximum amount
         assertApproxEqAbs(_buyer.balance, expectedRefundBuyerReceived, 1e18);
+    }
+
+    function testBuyWithIPSuccessWithDisperseFeeToSpecificAddress() public {
+        uint256 USER_BUY_AMOUNT = 1 ether;
+        uint256 PROTOCOL_TRADING_FEE = _calculateFee(USER_BUY_AMOUNT, TOTAL_FEE_BPS);
+        uint256 expectedFactoryOwnerBalance = _factoryOwner.balance + _calculateFee(PROTOCOL_TRADING_FEE, PROTOCOL_TRADING_FEE_PCT);
+        uint256 expectedSpecificAddressBalance = _specificAddress.balance + _calculateFee(PROTOCOL_TRADING_FEE, SPECIFIC_ADDRESS_FEE_PCT);
+
+        vm.deal(_buyer, USER_BUY_AMOUNT);
+        vm.startPrank(_buyer);
+        _tokenCreatedWithSpecificAddress.buyWithIP{value: USER_BUY_AMOUNT}(_buyer, 0, MarketType.BONDING_CURVE);
+        vm.stopPrank();
+
+        assertEq(address(_factoryOwner).balance, expectedFactoryOwnerBalance);
+        assertEq(address(_specificAddress).balance, expectedSpecificAddressBalance);
     }
 
     function testBuyWithIPSuccessInPiperXPhase() public {
@@ -280,6 +316,24 @@ contract SpotlightTokenTest is Test {
         assertApproxEqAbs(_buyer.balance, expectedRefundBuyerReceived, 1e18);
     }
 
+    function testBuyTokenSuccessWithDisperseFeeToSpecificAddress() public {
+        uint256 USER_BUY_TOKEN_AMOUNT = 400_000_000e18;
+        uint256 FACTORY_OWNER_BALANCE_BEFORE = _factoryOwner.balance;
+        uint256 ipIn = _tokenCreatedWithSpecificAddress.getTokenBuyQuote(USER_BUY_TOKEN_AMOUNT);
+        uint256 protocolTradingFee = _calculateFee(ipIn, TOTAL_FEE_BPS);
+        uint256 ipInWithFee = ipIn + protocolTradingFee;
+        uint256 expectedFactoryOwnerBalance = FACTORY_OWNER_BALANCE_BEFORE + _calculateFee(protocolTradingFee, PROTOCOL_TRADING_FEE_PCT);
+        uint256 expectedSpecificAddressBalance = _specificAddress.balance + _calculateFee(protocolTradingFee, SPECIFIC_ADDRESS_FEE_PCT);
+
+        vm.deal(_buyer, ipInWithFee);
+        vm.startPrank(_buyer);
+        _tokenCreatedWithSpecificAddress.buyToken{value: ipInWithFee}(USER_BUY_TOKEN_AMOUNT, _buyer, MarketType.BONDING_CURVE);
+        vm.stopPrank();
+
+        assertEq(address(_factoryOwner).balance, expectedFactoryOwnerBalance);
+        assertEq(address(_specificAddress).balance, expectedSpecificAddressBalance);
+    }
+
     function testBuyTokenSuccessInPiperXPhase() public {
         uint256 GRADUATE_TOKEN_AMOUNT = BONDIGN_CURVE_SUPPLY;
         uint256 graduateIpInWithFee = _token.getTokenBuyQuoteWithFee(GRADUATE_TOKEN_AMOUNT);
@@ -395,6 +449,31 @@ contract SpotlightTokenTest is Test {
 
         assertEq(_token.balanceOf(_buyer), expectedBuyerTokenBalance);
         assertEq(_buyer.balance, expectedBuyerBalance);
+    }
+
+    function testSellTokenSuccessWithDisperseFeeToSpecificAddress() public {
+        uint256 USER_BUY_TOKEN_AMOUNT = 600_000_000e18;
+        uint256 ipInWithFee = _tokenCreatedWithSpecificAddress.getTokenBuyQuoteWithFee(USER_BUY_TOKEN_AMOUNT);
+
+        vm.deal(_buyer, ipInWithFee);
+        vm.startPrank(_buyer);
+        _tokenCreatedWithSpecificAddress.buyToken{value: ipInWithFee}(USER_BUY_TOKEN_AMOUNT, _buyer, MarketType.BONDING_CURVE);
+        vm.stopPrank();
+        assertEq(_tokenCreatedWithSpecificAddress.balanceOf(_buyer), USER_BUY_TOKEN_AMOUNT);
+
+        uint256 USER_SELL_TOKEN_AMOUNT = 500_000_000e18;
+        uint256 ipOut = _tokenCreatedWithSpecificAddress.getTokenSellQuote(USER_SELL_TOKEN_AMOUNT);
+        uint256 fee = _calculateFee(ipOut, TOTAL_FEE_BPS);
+        uint256 expectedSpecificAddressBalance = _specificAddress.balance + _calculateFee(fee, SPECIFIC_ADDRESS_FEE_PCT);
+        uint256 expectedFactoryOwnerBalance = _factoryOwner.balance + _calculateFee(fee, PROTOCOL_TRADING_FEE_PCT);
+
+
+        vm.startPrank(_buyer);
+        _tokenCreatedWithSpecificAddress.sellToken(USER_SELL_TOKEN_AMOUNT, _buyer, 0, MarketType.BONDING_CURVE);
+        vm.stopPrank();
+
+        assertEq(address(_specificAddress).balance, expectedSpecificAddressBalance);
+        assertEq(address(_factoryOwner).balance, expectedFactoryOwnerBalance);
     }
 
     function testSellTokenSuccessInPiperXPhase() public {
