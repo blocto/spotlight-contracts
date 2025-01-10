@@ -309,7 +309,7 @@ contract SpotlightToken is
             address[] memory path = new address[](2);
             path[0] = _baseToken;
             path[1] = address(this);
-            
+
             uint256[] memory amounts = IUniswapV2Router02(_piperXRouter).getAmountsIn(tokenOrderSize, path);
             ipIn = amounts[0];
         }
@@ -326,12 +326,12 @@ contract SpotlightToken is
             address[] memory path = new address[](2);
             path[0] = address(this);
             path[1] = _baseToken;
-            
+
             uint256[] memory amounts = IUniswapV2Router02(_piperXRouter).getAmountsOut(tokenOrderSize, path);
             ipOut = amounts[1];
         }
 
-        if (_marketType == MarketType.BONDING_CURVE) {  
+        if (_marketType == MarketType.BONDING_CURVE) {
             ipOut = ISpotlightBondingCurve(_bondingCurve).getTargetTokenSellQuote(totalSupply(), tokenOrderSize);
         }
     }
