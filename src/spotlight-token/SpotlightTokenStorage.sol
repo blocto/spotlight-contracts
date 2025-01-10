@@ -6,7 +6,7 @@ import {MarketType} from "./ISpotlightToken.sol";
 abstract contract SpotlightTokenStorage {
     // @dev v1 properties
     uint256 public constant BONDING_CURVE_SUPPLY = 800_000_000e18; // 0.8 billion
-    uint256 public constant PROTOCOL_TRADING_FEE_PCT = 9_000; // 90%
+    uint256 public constant PROTOCOL_TRADING_FEE_BPS = 9_000; // 90%
     uint256 public constant MIN_IP_ORDER_SIZE = 0.0001 ether; // 0.0001 IP
 
     address internal _owner;
@@ -28,7 +28,7 @@ abstract contract SpotlightTokenStorage {
     MarketType internal _marketType;
     address internal _specificAddress;
 
-    uint256 public constant SPECIFIC_ADDRESS_FEE_PCT = 1_000; // 10%
+    uint256 public constant SPECIFIC_ADDRESS_FEE_BPS = 1_000; // 10%
     uint256 public constant LISTING_FEE = 0.1 ether;
     // @dev end of v2 properties
 }

@@ -22,11 +22,11 @@ contract SpotlightTokenTest is Test {
     // @dev following constants are from SpotlightTokenStorage
     uint256 private constant DEFAULT_CREATION_FEE = 0.1 ether;
     uint256 public constant TOTAL_FEE_BPS = 100;
-    uint256 public constant BONDIGN_CURVE_SUPPLY = 800_000_000e18; // 0.8 billion
+    uint256 public constant BONDING_CURVE_SUPPLY = 800_000_000e18; // 0.8 billion
     uint256 public constant MAX_TOTAL_SUPPLY = 1_000_000_000e18; // 1 billion
     uint256 public constant GRADUATE_MARKET_AMOUNT = 3 ether;
-    uint256 public constant SPECIFIC_ADDRESS_FEE_PCT = 1_000; // 10%
-    uint256 public constant PROTOCOL_TRADING_FEE_PCT = 9_000; // 90%
+    uint256 public constant SPECIFIC_ADDRESS_FEE_BPS = 1_000; // 10%
+    uint256 public constant PROTOCOL_TRADING_FEE_BPS = 9_000; // 90%
 
     SpotlightTokenFactory private _factory;
     SpotlightTokenIPCollection private _tokenIpCollection;
@@ -162,7 +162,7 @@ contract SpotlightTokenTest is Test {
     function testBuyWithIPSuccessGraduateMarketInBondingCurvePhase() public {
         uint256 USER_BUY_AMOUNT = 3 ether;
         uint256 PROTOCOL_TRADING_FEE = _calculateFee(USER_BUY_AMOUNT, TOTAL_FEE_BPS);
-        uint256 expectedIPSpent = _bondingCurve.getTargetTokenBuyQuote(0, BONDIGN_CURVE_SUPPLY);
+        uint256 expectedIPSpent = _bondingCurve.getTargetTokenBuyQuote(0, BONDING_CURVE_SUPPLY);
         uint256 expectedRefundBuyerReceived = USER_BUY_AMOUNT - PROTOCOL_TRADING_FEE - expectedIPSpent;
 
         vm.deal(_buyer, USER_BUY_AMOUNT);
@@ -191,9 +191,9 @@ contract SpotlightTokenTest is Test {
         uint256 USER_BUY_AMOUNT = 1 ether;
         uint256 PROTOCOL_TRADING_FEE = _calculateFee(USER_BUY_AMOUNT, TOTAL_FEE_BPS);
         uint256 expectedFactoryOwnerBalance =
-            _factoryOwner.balance + _calculateFee(PROTOCOL_TRADING_FEE, PROTOCOL_TRADING_FEE_PCT);
+            _factoryOwner.balance + _calculateFee(PROTOCOL_TRADING_FEE, PROTOCOL_TRADING_FEE_BPS);
         uint256 expectedSpecificAddressBalance =
-            _specificAddress.balance + _calculateFee(PROTOCOL_TRADING_FEE, SPECIFIC_ADDRESS_FEE_PCT);
+            _specificAddress.balance + _calculateFee(PROTOCOL_TRADING_FEE, SPECIFIC_ADDRESS_FEE_BPS);
 
         vm.deal(_buyer, USER_BUY_AMOUNT);
         vm.startPrank(_buyer);
@@ -330,9 +330,9 @@ contract SpotlightTokenTest is Test {
         uint256 protocolTradingFee = _calculateFee(ipIn, TOTAL_FEE_BPS);
         uint256 ipInWithFee = ipIn + protocolTradingFee;
         uint256 expectedFactoryOwnerBalance =
-            FACTORY_OWNER_BALANCE_BEFORE + _calculateFee(protocolTradingFee, PROTOCOL_TRADING_FEE_PCT);
+            FACTORY_OWNER_BALANCE_BEFORE + _calculateFee(protocolTradingFee, PROTOCOL_TRADING_FEE_BPS);
         uint256 expectedSpecificAddressBalance =
-            _specificAddress.balance + _calculateFee(protocolTradingFee, SPECIFIC_ADDRESS_FEE_PCT);
+            _specificAddress.balance + _calculateFee(protocolTradingFee, SPECIFIC_ADDRESS_FEE_BPS);
 
         vm.deal(_buyer, ipInWithFee);
         vm.startPrank(_buyer);
@@ -346,7 +346,7 @@ contract SpotlightTokenTest is Test {
     }
 
     function testBuyTokenSuccessInPiperXPhase() public {
-        uint256 GRADUATE_TOKEN_AMOUNT = BONDIGN_CURVE_SUPPLY;
+        uint256 GRADUATE_TOKEN_AMOUNT = BONDING_CURVE_SUPPLY;
         uint256 graduateIpInWithFee = _token.getTokenBuyQuoteWithFee(GRADUATE_TOKEN_AMOUNT);
 
         address graduateMarket = makeAddr("graduateMarket");
@@ -471,8 +471,8 @@ contract SpotlightTokenTest is Test {
         uint256 USER_SELL_TOKEN_AMOUNT = 500_000_000e18;
         uint256 ipOut = _tokenCreatedWithSpecificAddress.getTokenSellQuote(USER_SELL_TOKEN_AMOUNT);
         uint256 fee = _calculateFee(ipOut, TOTAL_FEE_BPS);
-        uint256 expectedSpecificAddressBalance = _specificAddress.balance + _calculateFee(fee, SPECIFIC_ADDRESS_FEE_PCT);
-        uint256 expectedFactoryOwnerBalance = _factoryOwner.balance + _calculateFee(fee, PROTOCOL_TRADING_FEE_PCT);
+        uint256 expectedSpecificAddressBalance = _specificAddress.balance + _calculateFee(fee, SPECIFIC_ADDRESS_FEE_BPS);
+        uint256 expectedFactoryOwnerBalance = _factoryOwner.balance + _calculateFee(fee, PROTOCOL_TRADING_FEE_BPS);
 
         vm.startPrank(_buyer);
         _tokenCreatedWithSpecificAddress.sellToken(USER_SELL_TOKEN_AMOUNT, _buyer, 0, MarketType.BONDING_CURVE);
@@ -483,7 +483,7 @@ contract SpotlightTokenTest is Test {
     }
 
     function testSellTokenSuccessInPiperXPhase() public {
-        uint256 GRADUATE_TOKEN_AMOUNT = BONDIGN_CURVE_SUPPLY;
+        uint256 GRADUATE_TOKEN_AMOUNT = BONDING_CURVE_SUPPLY;
         uint256 graduateIpInWithFee = _token.getTokenBuyQuoteWithFee(GRADUATE_TOKEN_AMOUNT);
 
         address graduateMarket = makeAddr("graduateMarket");

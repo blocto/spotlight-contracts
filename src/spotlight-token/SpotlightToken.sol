@@ -476,8 +476,8 @@ contract SpotlightToken is
             return;
         }
 
-        uint256 protocolFee = _calculateFee(_fee, PROTOCOL_TRADING_FEE_PCT);
-        uint256 specificAddressFee = _calculateFee(_fee, SPECIFIC_ADDRESS_FEE_PCT);
+        uint256 protocolFee = _calculateFee(_fee, PROTOCOL_TRADING_FEE_BPS);
+        uint256 specificAddressFee = _calculateFee(_fee, SPECIFIC_ADDRESS_FEE_BPS);
 
         (bool protocolSuccess,) = _protocolFeeRecipient.call{value: protocolFee}("");
         if (!protocolSuccess) revert IPTransferFailed();
