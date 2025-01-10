@@ -25,7 +25,7 @@ contract SpotlightNativeBondingCurve is ISpotlightBondingCurve {
         returns (uint256 baseTokensOut)
     {
         if (currentSupply < targetTokensIn) {
-            revert("SpotlightUSDCBondingCureve: INSUFFICIENT_SUPPLY");
+            revert("SpotlightNativeBondingCurve: INSUFFICIENT_SUPPLY");
         }
         uint256 x0 = currentSupply;
         uint256 x1 = x0 - targetTokensIn;
@@ -67,7 +67,6 @@ contract SpotlightNativeBondingCurve is ISpotlightBondingCurve {
 
         uint256 deltaY = (exp_b_x1 - exp_b_x0).fullMulDiv(A, B);
 
-        // adjust for 12 decimal places difference between deltaY and basedTokensIn
         basedTokensIn = deltaY;
     }
 }
