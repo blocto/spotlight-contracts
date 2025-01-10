@@ -33,11 +33,11 @@ contract SpotlightToken is
     }
 
     error SlippageBoundsExceeded();
-    error EthTransferFailed();
+    error IPTransferFailed();
     error InvalidMarketType();
     error InsufficientLiquidity();
     error AddressZero();
-    error EthAmountTooSmall();
+    error IPAmountTooSmall();
 
     /*
      * @dev See {ISpotlightToken-initialize}.
@@ -137,7 +137,7 @@ contract SpotlightToken is
         nonReentrant
     {
         if (_marketType != expectedMarketType) revert InvalidMarketType();
-        if (msg.value < MIN_IP_ORDER_SIZE) revert EthAmountTooSmall();
+        if (msg.value < MIN_IP_ORDER_SIZE) revert IPAmountTooSmall();
         if (recipient == address(0)) revert AddressZero();
 
         uint256 totalCost;
@@ -169,7 +169,7 @@ contract SpotlightToken is
             _disperseFees(fee);
             if (refund > 0) {
                 (bool success,) = recipient.call{value: refund}("");
-                if (!success) revert EthTransferFailed();
+                if (!success) revert IPTransferFailed();
             }
 
             emit SpotlightTokenBought(
@@ -192,7 +192,7 @@ contract SpotlightToken is
         nonReentrant
     {
         if (_marketType != expectedMarketType) revert InvalidMarketType();
-        if (msg.value < MIN_IP_ORDER_SIZE) revert EthAmountTooSmall();
+        if (msg.value < MIN_IP_ORDER_SIZE) revert IPAmountTooSmall();
         if (recipient == address(0)) revert AddressZero();
 
         uint256 totalCost;
@@ -227,7 +227,7 @@ contract SpotlightToken is
 
             if (refund > 0) {
                 (bool success,) = recipient.call{value: refund}("");
-                if (!success) revert EthTransferFailed();
+                if (!success) revert IPTransferFailed();
             }
 
             emit SpotlightTokenBought(
@@ -267,7 +267,7 @@ contract SpotlightToken is
             _disperseFees(fee);
 
             (bool success,) = recipient.call{value: payoutAfterFee}("");
-            if (!success) revert EthTransferFailed();
+            if (!success) revert IPTransferFailed();
 
             emit SpotlightTokenSold(
                 msg.sender, recipient, payoutAfterFee, fee, truePayoutSize, tokenAmount, totalSupply()
@@ -384,7 +384,7 @@ contract SpotlightToken is
         uint256 payout = ISpotlightBondingCurve(_bondingCurve).getTargetTokenSellQuote(totalSupply(), tokensToSell);
 
         if (payout < minPayoutSize) revert SlippageBoundsExceeded();
-        if (payout < MIN_IP_ORDER_SIZE) revert EthAmountTooSmall();
+        if (payout < MIN_IP_ORDER_SIZE) revert IPAmountTooSmall();
 
         _burn(msg.sender, tokensToSell);
 
@@ -472,7 +472,7 @@ contract SpotlightToken is
     function _disperseFees(uint256 _fee) internal {
         if (_specificAddress == address(0)) {
             (bool success,) = _protocolFeeRecipient.call{value: _fee}("");
-            if (!success) revert EthTransferFailed();
+            if (!success) revert IPTransferFailed();
             return;
         }
 
@@ -480,17 +480,17 @@ contract SpotlightToken is
         uint256 specificAddressFee = _calculateFee(_fee, SPECIFIC_ADDRESS_FEE_PCT);
 
         (bool protocolSuccess,) = _protocolFeeRecipient.call{value: protocolFee}("");
-        if (!protocolSuccess) revert EthTransferFailed();
+        if (!protocolSuccess) revert IPTransferFailed();
 
         (bool specificSuccess,) = _specificAddress.call{value: specificAddressFee}("");
-        if (!specificSuccess) revert EthTransferFailed();
+        if (!specificSuccess) revert IPTransferFailed();
     }
 
     function _graduateMarket() internal {
         _marketType = MarketType.PIPERX_POOL;
 
         (bool success,) = _protocolFeeRecipient.call{value: LISTING_FEE}("");
-        if (!success) revert EthTransferFailed();
+        if (!success) revert IPTransferFailed();
 
         uint256 ethLiquidity = address(this).balance;
         IWETH(_baseToken).deposit{value: ethLiquidity}();

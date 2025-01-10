@@ -235,7 +235,7 @@ contract SpotlightTokenTest is Test {
         vm.deal(_buyer, insufficientAmount);
         vm.startPrank(_buyer);
 
-        vm.expectRevert(abi.encodeWithSelector(SpotlightToken.EthAmountTooSmall.selector));
+        vm.expectRevert(abi.encodeWithSelector(SpotlightToken.IPAmountTooSmall.selector));
         _token.buyWithIP{value: insufficientAmount}(_buyer, 0, MarketType.BONDING_CURVE);
 
         vm.stopPrank();
@@ -389,7 +389,7 @@ contract SpotlightTokenTest is Test {
         vm.deal(_buyer, insufficientAmount);
         vm.startPrank(_buyer);
 
-        vm.expectRevert(abi.encodeWithSelector(SpotlightToken.EthAmountTooSmall.selector));
+        vm.expectRevert(abi.encodeWithSelector(SpotlightToken.IPAmountTooSmall.selector));
         _token.buyToken{value: insufficientAmount}(tokenAmount, _buyer, MarketType.BONDING_CURVE);
 
         vm.stopPrank();
