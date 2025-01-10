@@ -8,6 +8,7 @@ interface ISpotlightTokenFactory {
      * @param tokenName_ The name of the token.
      * @param tokenSymbol_ The symbol of the token.
      * @param predeployedTokenAddress The address of the predeployed token. The transaction reverts if the actual token address differs.
+     * @param tokenIpNFTId The tokenId of the NFT representing the IP associated with the token.
      */
     struct TokenCreationData {
         string tokenName;
@@ -67,7 +68,10 @@ interface ISpotlightTokenFactory {
      * @param tokenIpCollection_ The address of the token IP collection contract.
      * @param tokenBeacon_ The address of the token beacon contract.
      * @param bondingCurve_ The address of the bonding curve contract.
+     * @param baseToken_ The address of the base token.
      * @param storyDerivativeWorkflows_ The address of the story derivative workflows contract.
+     * @param piperXRouter_ The address of the PiperX router contract.
+     * @param piperXFactory_ The address of the PiperX factory contract.
      */
     function initialize(
         address owner_,
@@ -164,6 +168,7 @@ interface ISpotlightTokenFactory {
      * @param ipMetadata Metadata for the intellectual property. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
      * @param sigMetadata Signature data for token creation. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
      * @param sigRegister Signature data for IP registration. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
+     * @param specificAddress The address of the specific address to be used for the token creation.
      *
      * @return tokenAddress The address of the newly created token.
      * @return ipId The ID of the newly registered intellectual property.
