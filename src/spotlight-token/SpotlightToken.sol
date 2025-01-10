@@ -287,24 +287,53 @@ contract SpotlightToken is
      * @dev See {ISpotlightToken-getIPBuyQuote}.
      */
     function getIPBuyQuote(uint256 ipOrderSize) public view needInitialized returns (uint256 tokensOut) {
-        if (_marketType == MarketType.PIPERX_POOL) revert InvalidMarketType();
-        tokensOut = ISpotlightBondingCurve(_bondingCurve).getBaseTokenBuyQuote(totalSupply(), ipOrderSize);
+        if (_marketType == MarketType.PIPERX_POOL) {
+            address[] memory path = new address[](2);
+            path[0] = _baseToken;
+            path[1] = address(this);
+
+            uint256[] memory amounts = IUniswapV2Router02(_piperXRouter).getAmountsOut(ipOrderSize, path);
+            tokensOut = amounts[1];
+        }
+
+        if (_marketType == MarketType.BONDING_CURVE) {
+            tokensOut = ISpotlightBondingCurve(_bondingCurve).getBaseTokenBuyQuote(totalSupply(), ipOrderSize);
+        }
     }
 
     /*
      * @dev See {ISpotlightToken-getTokenBuyQuote}.
      */
     function getTokenBuyQuote(uint256 tokenOrderSize) public view needInitialized returns (uint256 ipIn) {
-        if (_marketType == MarketType.PIPERX_POOL) revert InvalidMarketType();
-        ipIn = ISpotlightBondingCurve(_bondingCurve).getTargetTokenBuyQuote(totalSupply(), tokenOrderSize);
+        if (_marketType == MarketType.PIPERX_POOL) {
+            address[] memory path = new address[](2);
+            path[0] = _baseToken;
+            path[1] = address(this);
+            
+            uint256[] memory amounts = IUniswapV2Router02(_piperXRouter).getAmountsIn(tokenOrderSize, path);
+            ipIn = amounts[0];
+        }
+        if (_marketType == MarketType.BONDING_CURVE) {
+            ipIn = ISpotlightBondingCurve(_bondingCurve).getTargetTokenBuyQuote(totalSupply(), tokenOrderSize);
+        }
     }
 
     /*
      * @dev See {ISpotlightToken-getTokenSellQuote}.
      */
     function getTokenSellQuote(uint256 tokenOrderSize) public view needInitialized returns (uint256 ipOut) {
-        if (_marketType == MarketType.PIPERX_POOL) revert InvalidMarketType();
-        ipOut = ISpotlightBondingCurve(_bondingCurve).getTargetTokenSellQuote(totalSupply(), tokenOrderSize);
+        if (_marketType == MarketType.PIPERX_POOL) {
+            address[] memory path = new address[](2);
+            path[0] = address(this);
+            path[1] = _baseToken;
+            
+            uint256[] memory amounts = IUniswapV2Router02(_piperXRouter).getAmountsOut(tokenOrderSize, path);
+            ipOut = amounts[1];
+        }
+
+        if (_marketType == MarketType.BONDING_CURVE) {  
+            ipOut = ISpotlightBondingCurve(_bondingCurve).getTargetTokenSellQuote(totalSupply(), tokenOrderSize);
+        }
     }
 
     /*
