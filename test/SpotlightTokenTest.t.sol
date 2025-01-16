@@ -13,6 +13,7 @@ import {SpotlightNativeBondingCurve} from "../src/spotlight-bonding-curve/Spotli
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {IUniswapV2Router02} from "../src/interfaces/IUniswapV2Router02.sol";
 import {ISpotlightToken} from "../src/spotlight-token/ISpotlightToken.sol";
+import {SpotlightProtocolRewards} from "../src/spotlight-protocol-rewards/SpotlightProtocolRewards.sol";
 
 contract SpotlightTokenTest is Test {
     address private constant WRAPPER_IP = 0xe8CabF9d1FFB6CE23cF0a86641849543ec7BD7d5;
@@ -27,6 +28,7 @@ contract SpotlightTokenTest is Test {
     uint256 public constant GRADUATE_MARKET_AMOUNT = 3 ether;
     uint256 public constant SPECIFIC_ADDRESS_FEE_BPS = 1_000; // 10%
     uint256 public constant PROTOCOL_TRADING_FEE_BPS = 9_000; // 90%
+    address constant IPA_ID = 0x359EcA9F3C4cCdB7C10Dd4D9410EaD52Ef9B430A;
 
     SpotlightTokenFactory private _factory;
     SpotlightTokenIPCollection private _tokenIpCollection;
@@ -35,24 +37,24 @@ contract SpotlightTokenTest is Test {
     SpotlightToken private _token;
     SpotlightToken private _tokenCreatedWithSpecificAddress;
     MockStoryDerivativeWorkflows private _mockStoryWorkflows;
+    SpotlightProtocolRewards private _protocolRewards;
 
     address private _factoryOwner;
     address private _tokenCreator;
     address private _tokenAddress;
     address private _buyer;
-    address private _specificAddress;
 
     function setUp() public {
         _mockStoryWorkflows = new MockStoryDerivativeWorkflows();
         SpotlightToken spotlightTokenImpl = new SpotlightToken();
 
         _factoryOwner = makeAddr("factoryOwner");
-        _specificAddress = makeAddr("specificAddress");
         vm.startPrank(_factoryOwner);
         _factory = new SpotlightTokenFactory();
         _tokenIpCollection = new SpotlightTokenIPCollection(address(_factory));
         _bondingCurve = new SpotlightNativeBondingCurve(690_000_000, 2_878_200_000);
         _spotlightTokenBeacon = new UpgradeableBeacon(address(spotlightTokenImpl), _factoryOwner);
+        _protocolRewards = new SpotlightProtocolRewards();
 
         _factory.initialize(
             _factoryOwner,
@@ -63,7 +65,8 @@ contract SpotlightTokenTest is Test {
             WRAPPER_IP,
             address(_mockStoryWorkflows),
             PIPERX_V2_ROUTER,
-            PIPERX_V2_FACTORY
+            PIPERX_V2_FACTORY,
+            address(_protocolRewards)
         );
         vm.stopPrank();
 
@@ -110,7 +113,7 @@ contract SpotlightTokenTest is Test {
             ipMetadata,
             sigMetadata,
             sigRegister,
-            _specificAddress
+            IPA_ID
         );
         _tokenCreatedWithSpecificAddress = SpotlightToken(payable(tokenAddressWithSpecificAddress));
         vm.stopPrank();
@@ -192,8 +195,8 @@ contract SpotlightTokenTest is Test {
         uint256 PROTOCOL_TRADING_FEE = _calculateFee(USER_BUY_AMOUNT, TOTAL_FEE_BPS);
         uint256 expectedFactoryOwnerBalance =
             _factoryOwner.balance + _calculateFee(PROTOCOL_TRADING_FEE, PROTOCOL_TRADING_FEE_BPS);
-        uint256 expectedSpecificAddressBalance =
-            _specificAddress.balance + _calculateFee(PROTOCOL_TRADING_FEE, SPECIFIC_ADDRESS_FEE_BPS);
+        uint256 expectedProtocolRewardsBalance =
+            address(_protocolRewards).balance + _calculateFee(PROTOCOL_TRADING_FEE, SPECIFIC_ADDRESS_FEE_BPS);
 
         vm.deal(_buyer, USER_BUY_AMOUNT);
         vm.startPrank(_buyer);
@@ -201,7 +204,7 @@ contract SpotlightTokenTest is Test {
         vm.stopPrank();
 
         assertEq(address(_factoryOwner).balance, expectedFactoryOwnerBalance);
-        assertEq(address(_specificAddress).balance, expectedSpecificAddressBalance);
+        assertEq(address(_protocolRewards).balance, expectedProtocolRewardsBalance);
     }
 
     function testBuyWithIPSuccessInPiperXPhase() public {
@@ -331,8 +334,8 @@ contract SpotlightTokenTest is Test {
         uint256 ipInWithFee = ipIn + protocolTradingFee;
         uint256 expectedFactoryOwnerBalance =
             FACTORY_OWNER_BALANCE_BEFORE + _calculateFee(protocolTradingFee, PROTOCOL_TRADING_FEE_BPS);
-        uint256 expectedSpecificAddressBalance =
-            _specificAddress.balance + _calculateFee(protocolTradingFee, SPECIFIC_ADDRESS_FEE_BPS);
+        uint256 expectedProtocolRewardsBalance =
+            address(_protocolRewards).balance + _calculateFee(protocolTradingFee, SPECIFIC_ADDRESS_FEE_BPS);
 
         vm.deal(_buyer, ipInWithFee);
         vm.startPrank(_buyer);
@@ -342,7 +345,7 @@ contract SpotlightTokenTest is Test {
         vm.stopPrank();
 
         assertEq(address(_factoryOwner).balance, expectedFactoryOwnerBalance);
-        assertEq(address(_specificAddress).balance, expectedSpecificAddressBalance);
+        assertEq(address(_protocolRewards).balance, expectedProtocolRewardsBalance);
     }
 
     function testBuyTokenSuccessInPiperXPhase() public {
@@ -471,14 +474,15 @@ contract SpotlightTokenTest is Test {
         uint256 USER_SELL_TOKEN_AMOUNT = 500_000_000e18;
         uint256 ipOut = _tokenCreatedWithSpecificAddress.getTokenSellQuote(USER_SELL_TOKEN_AMOUNT);
         uint256 fee = _calculateFee(ipOut, TOTAL_FEE_BPS);
-        uint256 expectedSpecificAddressBalance = _specificAddress.balance + _calculateFee(fee, SPECIFIC_ADDRESS_FEE_BPS);
+        uint256 expectedProtocolRewardsBalance =
+            address(_protocolRewards).balance + _calculateFee(fee, SPECIFIC_ADDRESS_FEE_BPS);
         uint256 expectedFactoryOwnerBalance = _factoryOwner.balance + _calculateFee(fee, PROTOCOL_TRADING_FEE_BPS);
 
         vm.startPrank(_buyer);
         _tokenCreatedWithSpecificAddress.sellToken(USER_SELL_TOKEN_AMOUNT, _buyer, 0, MarketType.BONDING_CURVE);
         vm.stopPrank();
 
-        assertEq(address(_specificAddress).balance, expectedSpecificAddressBalance);
+        assertEq(address(_protocolRewards).balance, expectedProtocolRewardsBalance);
         assertEq(address(_factoryOwner).balance, expectedFactoryOwnerBalance);
     }
 
