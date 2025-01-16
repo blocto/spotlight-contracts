@@ -12,6 +12,7 @@ import {IUniswapV2Router02} from "../interfaces/IUniswapV2Router02.sol";
 import {IUniswapV2Factory} from "../interfaces/IUniswapV2Factory.sol";
 import {MarketType, MarketState} from "./ISpotlightToken.sol";
 import {ReentrancyGuard} from "./ReentrancyGuard.sol";
+import {ISpotlightProtocolRewards} from "../spotlight-protocol-rewards/ISpotlightProtocolRewards.sol";
 
 contract SpotlightToken is
     BeaconProxyStorage,
@@ -52,7 +53,8 @@ contract SpotlightToken is
         string memory tokenSymbol_,
         address piperXRouter_,
         address piperXFactory_,
-        address specificAddress_
+        address specificAddress_,
+        address protocolRewards_
     ) external {
         if (isInitialized()) {
             revert("SpotlightToken: Already initialized");
@@ -71,7 +73,8 @@ contract SpotlightToken is
         _piperXRouter = piperXRouter_;
         _piperXFactory = piperXFactory_;
         _specificAddress = specificAddress_;
-
+        _protocolRewards = protocolRewards_;
+        
         __ReentrancyGuard_init();
     }
 
@@ -482,8 +485,7 @@ contract SpotlightToken is
         (bool protocolSuccess,) = _protocolFeeRecipient.call{value: protocolFee}("");
         if (!protocolSuccess) revert IPTransferFailed();
 
-        (bool specificSuccess,) = _specificAddress.call{value: specificAddressFee}("");
-        if (!specificSuccess) revert IPTransferFailed();
+        ISpotlightProtocolRewards(_protocolRewards).deposit{value: specificAddressFee}(_specificAddress);
     }
 
     function _graduateMarket() internal {
