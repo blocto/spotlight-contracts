@@ -173,39 +173,33 @@ interface ISpotlightToken {
 
     /**
      * @dev The number of tokens that can be bought from a given amount of IP during bonding curve phase.
-     * @notice The decimals of IP is 6.
      */
     function getIPBuyQuote(uint256 ipOrderSize) external view returns (uint256 tokensOut);
 
     /**
      * @dev The amount of IP needed to buy a given number of tokens during bonding curve phase.
-     * @notice The decimals of IP is 6.
      */
     function getTokenBuyQuote(uint256 tokenOrderSize) external view returns (uint256 ipIn);
 
     /**
      * @dev The amount of IP that can be received for selling a given number of tokens during bonding curve phase.
-     * @notice The decimals of IP is 6.
      */
     function getTokenSellQuote(uint256 tokenOrderSize) external view returns (uint256 ipOut);
 
     /**
      * @dev The number of tokens that can be bought from a given amount of IP during bonding curve phase.
-     * @notice The decimals of IP is 6.
      * @notice The quote is considered with the protocol trading fee.
      */
     function getIPBuyQuoteWithFee(uint256 ipOrderSize) external view returns (uint256 tokensOut);
 
     /**
      * @dev The amount of IP needed to buy a given number of tokens during bonding curve phase.
-     * @notice The decimals of IP is 6.
      * @notice The quote is considered with the protocol trading fee.
      */
     function getTokenBuyQuoteWithFee(uint256 tokenOrderSize) external view returns (uint256 ipIn);
 
     /**
      * @dev The amount of IP that can be received for selling a given number of tokens during bonding curve phase.
-     * @notice The decimals of IP is 6.
      * @notice The quote is considered with the protocol trading fee.
      */
     function getTokenSellQuoteWithFee(uint256 tokenOrderSize) external view returns (uint256 ipOut);
