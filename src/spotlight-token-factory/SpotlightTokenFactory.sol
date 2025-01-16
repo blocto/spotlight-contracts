@@ -44,7 +44,8 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
         address baseToken_,
         address storyDerivativeWorkflows_,
         address piperXRouter_,
-        address piperXFactory_
+        address piperXFactory_,
+        address protocolRewards_
     ) external {
         if (isInitialized()) {
             revert("SpotlightTokenFactory: Already initialized");
@@ -60,6 +61,7 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
         _isInitialized = true;
         _piperXRouter = piperXRouter_;
         _piperXFactory = piperXFactory_;
+        _protocolRewards = protocolRewards_;
     }
 
     /**
@@ -261,7 +263,8 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
             tokenCreationData.tokenSymbol,
             _piperXRouter,
             _piperXFactory,
-            specificAddress
+            specificAddress,
+            _protocolRewards
         );
         if (tokenAddress != tokenCreationData.predeployedTokenAddress) {
             revert("The address of the created token does not match the predeployed address");

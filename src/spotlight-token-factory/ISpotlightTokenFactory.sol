@@ -72,6 +72,7 @@ interface ISpotlightTokenFactory {
      * @param storyDerivativeWorkflows_ The address of the story derivative workflows contract.
      * @param piperXRouter_ The address of the PiperX router contract.
      * @param piperXFactory_ The address of the PiperX factory contract.
+     * @param protocolRewards_ The address of the protocol rewards contract.
      */
     function initialize(
         address owner_,
@@ -82,7 +83,8 @@ interface ISpotlightTokenFactory {
         address baseToken_,
         address storyDerivativeWorkflows_,
         address piperXRouter_,
-        address piperXFactory_
+        address piperXFactory_,
+        address protocolRewards_
     ) external;
 
     /**

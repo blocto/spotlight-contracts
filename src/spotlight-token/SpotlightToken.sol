@@ -74,7 +74,7 @@ contract SpotlightToken is
         _piperXFactory = piperXFactory_;
         _specificAddress = specificAddress_;
         _protocolRewards = protocolRewards_;
-        
+
         __ReentrancyGuard_init();
     }
 

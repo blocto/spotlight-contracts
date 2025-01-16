@@ -18,5 +18,6 @@ abstract contract SpotlightTokenFactoryStorage {
     // @dev v2 properties
     address internal _piperXRouter;
     address internal _piperXFactory;
+    address internal _protocolRewards;
     // @dev end of v2 properties
 }
