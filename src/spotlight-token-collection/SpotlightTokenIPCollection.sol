@@ -10,7 +10,7 @@ contract SpotlightTokenIPCollection is Ownable, ERC721, ISpotlightTokenIPCollect
     bool private _isTransferEnabled = false;
     bool private _isMintEnabled = false;
     address private _tokenFactory;
-    string private _tokenURI = "https://ipfs.io/ipfs/bafkreibqge4t7rsppnarffvrzlfph5rk5ajvupa4oyk4v2h3ieqccty4ye";
+    string private _tokenURI = "ipfs://bafkreibqge4t7rsppnarffvrzlfph5rk5ajvupa4oyk4v2h3ieqccty4ye";
 
     constructor(address tokenFactory_) Ownable(msg.sender) ERC721("Spotlight Meme IP", "Spotlight Meme IP") {
         _tokenFactory = tokenFactory_;
