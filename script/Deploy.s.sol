@@ -9,6 +9,7 @@ import {SpotlightUSDCBondingCurve} from "../src/spotlight-bonding-curve/Spotligh
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {SpotlightToken} from "../src/spotlight-token/SpotlightToken.sol";
 import {BeaconProxy} from "../src/beacon-proxy/BeaconProxy.sol";
+import {SpotlightProtocolRewards} from "../src/spotlight-protocol-rewards/SpotlightProtocolRewards.sol";
 
 contract Deploy is Script {
     /**
@@ -63,6 +64,9 @@ contract Deploy is Script {
         // @dev deploy spotlight token factory beacon contract
         UpgradeableBeacon factoryBeacon = new UpgradeableBeacon(address(factoryImpl), _SPOTLIGHT_TOKEN_FACTORY_OWNER);
 
+        // @dev deploy spotlight protocol rewards contract
+        SpotlightProtocolRewards protocolRewards = new SpotlightProtocolRewards();
+
         // @dev deploy spotlight token factory proxy contract
         BeaconProxy factoryProxy = new BeaconProxy(address(factoryBeacon));
         SpotlightTokenFactory(address(factoryProxy)).initialize(
@@ -74,7 +78,8 @@ contract Deploy is Script {
             _SUSDCTokenAddr, // baseToken_
             _STORY_DERIVATIVE_WORKFLOWS_ADDRESS, // storyDerivativeWorkflows_
             PIPERX_V2_ROUTER, // piperxV2Router_
-            PIPERX_V2_FACTORY // piperxV2Factory_
+            PIPERX_V2_FACTORY, // piperxV2Factory_
+            address(protocolRewards) // protocolRewards_
         );
         tokenIpCollection.setTokenFactory(address(factoryProxy));
         vm.stopBroadcast();
