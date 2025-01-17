@@ -8,6 +8,7 @@ interface ISpotlightTokenFactory {
      * @param tokenName_ The name of the token.
      * @param tokenSymbol_ The symbol of the token.
      * @param predeployedTokenAddress The address of the predeployed token. The transaction reverts if the actual token address differs.
+     * @param tokenIpNFTId The tokenId of the NFT representing the IP associated with the token.
      */
     struct TokenCreationData {
         string tokenName;
@@ -36,7 +37,6 @@ interface ISpotlightTokenFactory {
      * @param tokenIpNFTId The ID of the NFT representing the IP associated with the token.
      * @param initialBuyAmount The amount of tokens purchased initially.
      * @param initialBuyRecipient The address that received the initial purchased tokens.
-     * @param feeToken The address of the token used for paying the creation fee.
      * @param fee The fee amount paid for the token creation.
      * @param factory The address of the factory contract used for token creation.
      * @param bondingCurve The address of the bonding curve contract used for token economics.
@@ -50,11 +50,45 @@ interface ISpotlightTokenFactory {
         uint256 tokenIpNFTId,
         uint256 initialBuyAmount,
         address initialBuyRecipient,
-        address feeToken,
         uint256 fee,
         address factory,
         address bondingCurve
     );
+
+    /**
+     * @dev Returns if the token factory has been initialized.
+     */
+    function isInitialized() external view returns (bool);
+
+    /**
+     * @dev Initializes the token factory.
+     *
+     * @param owner_ The address of the token factory owner.
+     * @param creationFee_ The fee to create a token.
+     * @param tokenIpCollection_ The address of the token IP collection contract.
+     * @param tokenBeacon_ The address of the token beacon contract.
+     * @param bondingCurve_ The address of the bonding curve contract.
+     * @param baseToken_ The address of the base token.
+     * @param storyDerivativeWorkflows_ The address of the story derivative workflows contract.
+     * @param piperXRouter_ The address of the PiperX router contract.
+     * @param piperXFactory_ The address of the PiperX factory contract.
+     */
+    function initialize(
+        address owner_,
+        uint256 creationFee_,
+        address tokenIpCollection_,
+        address tokenBeacon_,
+        address bondingCurve_,
+        address baseToken_,
+        address storyDerivativeWorkflows_,
+        address piperXRouter_,
+        address piperXFactory_
+    ) external;
+
+    /**
+     * @dev Returns the address of the token factory owner.
+     */
+    function owner() external view returns (address);
 
     /**
      * @dev Returns the address of the token IP collection contract
@@ -69,24 +103,24 @@ interface ISpotlightTokenFactory {
     function setTokenIpCollection(address newTokenIpCollection) external;
 
     /**
-     * @dev Returns the fee to create a token
+     * @dev Returns the address of the token beacon contract
+     */
+    function tokenBeacon() external view returns (address);
+
+    /**
+     * @dev Sets the address of the token beacon contract
+     */
+    function setTokenBeacon(address newTokenBeacon) external;
+
+    /**
+     * @dev Returns the fee amount required to create a token (in native token)
      */
     function createTokenFee() external view returns (uint256);
 
     /**
-     * @dev Sets the fee to create a token
+     * @dev Sets the fee amount required to create a token (in native token)
      */
     function setCreateTokenFee(uint256 newFee) external;
-
-    /**
-     * @dev Returns the address of the fee token
-     */
-    function feeToken() external view returns (address);
-
-    /**
-     * @dev Sets the address of the fee token
-     */
-    function setFeeToken(address newToken) external;
 
     /**
      * @dev Returns the address of the story derivative workflows contract
@@ -99,25 +133,42 @@ interface ISpotlightTokenFactory {
     function setStoryDerivativeWorkflows(address newStoryDerivativeWorkflows) external;
 
     /**
+     * @dev Returns the address of the base token
+     */
+    function baseToken() external view returns (address);
+
+    /**
+     * @dev Sets the address of the base token
+     */
+    function setBaseToken(address newBaseToken) external;
+
+    /**
+     * @dev Returns the address of the bonding curve contract
+     */
+    function bondingCurve() external view returns (address);
+
+    /**
+     * @dev Sets the address of the bonding curve contract
+     */
+    function setBindingCurve(address newBondingCurve) external;
+
+    /**
      * @dev Computes the address of a token created by the specified token creator.
      * @param tokenCreator The address of the entity creating the token.
-     * @param tokenName The name of the token.
-     * @param tokenSymbol The symbol of the token.
      * @return The calculated token address.
      */
-    function calculateTokenAddress(address tokenCreator, string memory tokenName, string memory tokenSymbol)
-        external
-        view
-        returns (address);
+    function calculateTokenAddress(address tokenCreator) external view returns (address);
 
     /**
      * @dev Creates a new token with the specified parameters and initializes it.
+     * @notice Creation fee must be paid in native token.
      * @param tokenCreationData Details for creating the token.
      * @param initialBuyData Details for the initial purchase of the token.
      * @param derivData Details for creating a derivative token. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
      * @param ipMetadata Metadata for the intellectual property. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
      * @param sigMetadata Signature data for token creation. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
      * @param sigRegister Signature data for IP registration. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
+     * @param specificAddress The address of the specific address to be used for the token creation.
      *
      * @return tokenAddress The address of the newly created token.
      * @return ipId The ID of the newly registered intellectual property.
@@ -128,8 +179,15 @@ interface ISpotlightTokenFactory {
         StoryWorkflowStructs.MakeDerivative calldata derivData,
         StoryWorkflowStructs.IPMetadata calldata ipMetadata,
         StoryWorkflowStructs.SignatureData calldata sigMetadata,
-        StoryWorkflowStructs.SignatureData calldata sigRegister
-    ) external returns (address tokenAddress, address ipId);
+        StoryWorkflowStructs.SignatureData calldata sigRegister,
+        address specificAddress
+    ) external payable returns (address tokenAddress, address ipId);
+
+    /**
+     * @dev Returns the quote for initial buying tokens
+     * @param tokensOut The number of tokens to be bought
+     */
+    function getInitialBuyTokenQuote(uint256 tokensOut) external view returns (uint256);
 
     /**
      * @dev Returns the number of tokens created by a token creator

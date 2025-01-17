@@ -5,19 +5,19 @@ import "../lib/forge-std/src/Script.sol";
 import {SpotlightTokenFaucet} from "../src/spotlight-token-faucet/SpotlightTokenFaucet.sol";
 import {SpotlightTokenFactory} from "../src/spotlight-token-factory/SpotlightTokenFactory.sol";
 import {SpotlightTokenIPCollection} from "../src/spotlight-token-collection/SpotlightTokenIPCollection.sol";
-import {SpotlightUSDCBondingCurve} from "../src/spotlight-bonding-curve/SpotlightUSDCBondingCurve.sol";
+import {SpotlightNativeBondingCurve} from "../src/spotlight-bonding-curve/SpotlightNativeBondingCurve.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {SpotlightToken} from "../src/spotlight-token/SpotlightToken.sol";
 import {BeaconProxy} from "../src/beacon-proxy/BeaconProxy.sol";
 
-contract Deploy is Script {
+contract OnDexDeploy is Script {
     /**
      * @dev Odyssey chain id: 1516
      * @dev Odyssey rpc: https://odyssey.storyrpc.io
      */
 
     /* Deploy and verify with the following command:
-        forge script script/Deploy.s.sol:Deploy  --broadcast \
+        forge script script/OnDexDeploy.s.sol:OnDexDeploy  --broadcast \
         --chain-id 1516 \
         --rpc-url https://odyssey.storyrpc.io \
         --verify \
@@ -37,7 +37,7 @@ contract Deploy is Script {
     function run() public {
         vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
         // @dev deploy spotlight token faucet contract (SUSDC)
-        new SpotlightTokenFaucet(_SUSDCTokenAddr);
+        // new SpotlightTokenFaucet(_SUSDCTokenAddr);
 
         // @dev deploy spotlight token ip collection contract
         SpotlightTokenIPCollection tokenIpCollection = new SpotlightTokenIPCollection(
@@ -45,8 +45,8 @@ contract Deploy is Script {
         );
 
         // @dev deploy spotlight bonding curve contract
-        SpotlightUSDCBondingCurve bondingCurve = new SpotlightUSDCBondingCurve(
-            6_900_000_000_000, // A=6.9*10^-6
+        SpotlightNativeBondingCurve bondingCurve = new SpotlightNativeBondingCurve(
+            690_000_000, // A=6.9*10^-6
             2_878_200_000 // B=2.8782×10^−9
         );
 
@@ -67,11 +67,11 @@ contract Deploy is Script {
         BeaconProxy factoryProxy = new BeaconProxy(address(factoryBeacon));
         SpotlightTokenFactory(address(factoryProxy)).initialize(
             _SPOTLIGHT_TOKEN_FACTORY_OWNER, // owner_
-            5_000_000, // creationFee: 5 usdc
+            1 ether, // creationFee: 1 ether
             address(tokenIpCollection), // tokenIpCollection_
             address(spotlightTokenBeacon), // tokenBeacon_
             address(bondingCurve), // bondingCurve_
-            _SUSDCTokenAddr, // baseToken_
+            WRAPPER_IP,
             _STORY_DERIVATIVE_WORKFLOWS_ADDRESS, // storyDerivativeWorkflows_
             PIPERX_V2_ROUTER, // piperxV2Router_
             PIPERX_V2_FACTORY // piperxV2Factory_
