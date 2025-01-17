@@ -72,14 +72,6 @@ contract SpotlightProtocolRewardsTest is Test {
         vm.stopPrank();
     }
 
-    function testDepositRevertsWhenInvalidReturnData() public {
-        address nonIpaId = makeAddr("nonIpaId");
-        vm.startPrank(_user);
-        vm.expectRevert(SpotlightProtocolRewards.InvalidReturnData.selector);
-        _protocolRewards.deposit{value: REWARD_AMOUNT}(nonIpaId);
-        vm.stopPrank();
-    }
-
     function testWithdrawSuccess() public {
         _enableWithdrawAndDeposit();
         assertEq(_user.balance, 0);

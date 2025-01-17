@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import {ISpotlightProtocolRewards} from "./ISpotlightProtocolRewards.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IMinimalIPAccount} from "./IMinimalIPAccount.sol";
 
 /*
  * @dev Manager of deposits & withdrawals for protocol rewards
@@ -20,7 +21,6 @@ contract SpotlightProtocolRewards is ISpotlightProtocolRewards, Ownable {
     error InvalidWithdraw();
     error TransferFailed();
     error TokenCallFailed();
-    error InvalidReturnData();
     error WithdrawDisabled();
     error IpaIdsEmpty();
 
@@ -164,13 +164,7 @@ contract SpotlightProtocolRewards is ISpotlightProtocolRewards, Ownable {
      * @return tokenId The ID of the token
      */
     function _getToken(address ipaId) internal view returns (uint256 chainId, address tokenContract, uint256 tokenId) {
-        bytes memory callData = abi.encodeWithSignature("token()");
-        (bool success, bytes memory returnData) = ipaId.staticcall(callData);
-        if (!success) revert TokenCallFailed();
-        if (returnData.length != 96) revert InvalidReturnData();
-
-        (chainId, tokenContract, tokenId) = abi.decode(returnData, (uint256, address, uint256));
-
+        (chainId, tokenContract, tokenId) = IMinimalIPAccount(ipaId).token();
         if (tokenContract == address(0)) revert AddressZero();
     }
 
