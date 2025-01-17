@@ -25,6 +25,20 @@ contract OnDexDeploy is Script {
         --verifier-url 'https://odyssey.storyscan.xyz/api/' 
     */
 
+    /**
+     * @dev Odyssey chain id: 1516
+     * @dev Odyssey rpc: https://odyssey.storyrpc.io
+     */
+
+    /* verify contract with the following command:
+    forge verify-contract \
+        --rpc-url https://odyssey.storyrpc.io \
+        --verifier blockscout \
+        --verifier-url 'https://odyssey.storyscan.xyz/api/' \
+        {REPLACE_CONTRACT_ADDRESS} \
+        src/{CONTRACT_PATH}.sol:{CONTRACT_NAME}
+    */
+
     //@notice The address of the SUSDCToken contract on Odyssey.(https://odyssey.storyscan.xyz/address/0x40fCa9cB1AB15eD9B5bDA19A52ac00A78AE08e1D?tab=contract)
     address private _SUSDCTokenAddr = 0x40fCa9cB1AB15eD9B5bDA19A52ac00A78AE08e1D;
     address private _STORY_DERIVATIVE_WORKFLOWS_ADDRESS = 0xa8815CEB96857FFb8f5F8ce920b1Ae6D70254C7B;
@@ -36,8 +50,6 @@ contract OnDexDeploy is Script {
 
     function run() public {
         vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
-        // @dev deploy spotlight token faucet contract (SUSDC)
-        // new SpotlightTokenFaucet(_SUSDCTokenAddr);
 
         // @dev deploy spotlight token ip collection contract
         SpotlightTokenIPCollection tokenIpCollection = new SpotlightTokenIPCollection(
@@ -67,7 +79,7 @@ contract OnDexDeploy is Script {
         BeaconProxy factoryProxy = new BeaconProxy(address(factoryBeacon));
         SpotlightTokenFactory(address(factoryProxy)).initialize(
             _SPOTLIGHT_TOKEN_FACTORY_OWNER, // owner_
-            1 ether, // creationFee: 1 ether
+            0.1 ether, // creationFee: 0.1 ether
             address(tokenIpCollection), // tokenIpCollection_
             address(spotlightTokenBeacon), // tokenBeacon_
             address(bondingCurve), // bondingCurve_
