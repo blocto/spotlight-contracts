@@ -9,7 +9,6 @@ import {MockStoryDerivativeWorkflows} from "./mocks/MockStoryDerivativeWorkflows
 import {ISpotlightTokenFactory} from "../src/spotlight-token-factory/ISpotlightTokenFactory.sol";
 import {StoryWorkflowStructs} from "../src/spotlight-token-factory/story-workflow-interfaces/StoryWorkflowStructs.sol";
 import {SpotlightNativeBondingCurve} from "../src/spotlight-bonding-curve/SpotlightNativeBondingCurve.sol";
-import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SpotlightProtocolRewards} from "../src/spotlight-protocol-rewards/SpotlightProtocolRewards.sol";
 
@@ -23,7 +22,6 @@ contract SpotlightTokenFactoryTest is Test {
 
     SpotlightTokenIPCollection private _tokenIpCollection;
     SpotlightNativeBondingCurve private _bondingCurve;
-    UpgradeableBeacon private _spotlightTokenBeacon;
     SpotlightProtocolRewards private _protocolRewards;
     address private constant Wrapper_IP = 0xe8CabF9d1FFB6CE23cF0a86641849543ec7BD7d5;
 
@@ -37,14 +35,13 @@ contract SpotlightTokenFactoryTest is Test {
         _factoryAddress = address(_factory);
         _tokenIpCollection = new SpotlightTokenIPCollection(_factoryAddress);
         _bondingCurve = new SpotlightNativeBondingCurve(1060848709, 4379701787);
-        _spotlightTokenBeacon = new UpgradeableBeacon(address(spotlightTokenImpl), _factoryOwner);
         _protocolRewards = new SpotlightProtocolRewards();
 
         _factory.initialize(
             _factoryOwner,
             DEFAULT_CREATION_FEE,
             address(_tokenIpCollection),
-            address(_spotlightTokenBeacon),
+            address(spotlightTokenImpl),
             address(_bondingCurve),
             Wrapper_IP,
             address(_mockStoryWorkflows),

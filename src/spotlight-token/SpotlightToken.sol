@@ -5,7 +5,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {InitializableERC20} from "./InitializableERC20.sol";
 import {ISpotlightToken} from "./ISpotlightToken.sol";
 import {SpotlightTokenStorage} from "./SpotlightTokenStorage.sol";
-import {BeaconProxyStorage} from "../beacon-proxy/BeaconProxyStorage.sol";
 import {ISpotlightBondingCurve} from "../spotlight-bonding-curve/ISpotlightBondingCurve.sol";
 import {IWETH} from "../interfaces/IWETH.sol";
 import {IUniswapV2Router02} from "../interfaces/IUniswapV2Router02.sol";
@@ -15,7 +14,6 @@ import {ReentrancyGuard} from "./ReentrancyGuard.sol";
 import {ISpotlightProtocolRewards} from "../spotlight-protocol-rewards/ISpotlightProtocolRewards.sol";
 
 contract SpotlightToken is
-    BeaconProxyStorage,
     InitializableERC20,
     ReentrancyGuard,
     SpotlightTokenStorage,
