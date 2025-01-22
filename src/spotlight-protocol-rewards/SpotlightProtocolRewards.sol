@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.13;
 
 import {ISpotlightProtocolRewards} from "./ISpotlightProtocolRewards.sol";
@@ -31,7 +31,7 @@ contract SpotlightProtocolRewards is ISpotlightProtocolRewards, Ownable {
 
     /*
      * @dev The total amount of IP held in the contract
-     * 
+     *
      * @return uint256 Total IP balance
      */
     function totalRewards() external view returns (uint256) {
@@ -40,7 +40,7 @@ contract SpotlightProtocolRewards is ISpotlightProtocolRewards, Ownable {
 
     /*
      * @dev Deposit protocol rewards
-     * 
+     *
      * @param ipaId The IpaId to deposit rewards for
      */
     function deposit(address ipaId) external payable {
@@ -56,7 +56,7 @@ contract SpotlightProtocolRewards is ISpotlightProtocolRewards, Ownable {
 
     /*
      * @dev Withdraw protocol rewards
-     * 
+     *
      * @param ipaId The IpaId to withdraw rewards from
      */
     function withdraw(address ipaId) external onlyWithdrawEnabled {
@@ -92,7 +92,9 @@ contract SpotlightProtocolRewards is ISpotlightProtocolRewards, Ownable {
             if (ipaId == address(0)) revert AddressZero();
 
             (, address tokenContract, uint256 tokenId) = _getToken(ipaId);
-            if (!_checkIsOwner(tokenContract, tokenId)) revert InvalidWithdraw();
+            if (!_checkIsOwner(tokenContract, tokenId)) {
+                revert InvalidWithdraw();
+            }
 
             uint256 ownerRewards = this.rewardsOf(tokenContract, tokenId);
             if (ownerRewards == 0) continue;
@@ -113,7 +115,7 @@ contract SpotlightProtocolRewards is ISpotlightProtocolRewards, Ownable {
 
     /*
      * @dev Is withdraw and withdrawAll functionality are enabled
-     * 
+     *
      * @return bool Is withdraw and withdrawAll functionality are enabled
      */
     function isWithdrawEnabled() external view returns (bool) {
@@ -131,7 +133,7 @@ contract SpotlightProtocolRewards is ISpotlightProtocolRewards, Ownable {
      * @dev Get the specific rewards for an IpaId
      *
      * @param ipaId The address to check the rewards for
-     * 
+     *
      * @return uint256 The specific rewards for the IpaId
      */
     function rewardsOf(address ipaId) external view returns (uint256) {
@@ -143,10 +145,10 @@ contract SpotlightProtocolRewards is ISpotlightProtocolRewards, Ownable {
 
     /*
      * @dev Get the specific rewards for a token
-     * 
+     *
      * @param tokenContract The contract address of the token
      * @param tokenId The ID of the token
-     * 
+     *
      * @return uint256 The specific rewards for the token
      */
     function rewardsOf(address tokenContract, uint256 tokenId) external view returns (uint256) {
@@ -158,7 +160,7 @@ contract SpotlightProtocolRewards is ISpotlightProtocolRewards, Ownable {
     /*
      * @dev Internal function to get token info using low level call
      * @param ipaId The address of the contract to call
-     * 
+     *
      * @return chainId The EIP-155 ID of the chain the token exists on
      * @return tokenContract The contract address of the token
      * @return tokenId The ID of the token
