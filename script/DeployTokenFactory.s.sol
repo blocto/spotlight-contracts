@@ -69,7 +69,8 @@ contract Deploy is Script {
         SpotlightProtocolRewards protocolRewards = new SpotlightProtocolRewards();
 
         // @dev deploy spotlight token factory proxy contract
-        TransparentUpgradeableProxy factoryProxy = new TransparentUpgradeableProxy(address(factoryImpl), _SPOTLIGHT_TOKEN_FACTORY_OWNER, "");
+        TransparentUpgradeableProxy factoryProxy =
+            new TransparentUpgradeableProxy(address(factoryImpl), _SPOTLIGHT_TOKEN_FACTORY_OWNER, "");
         SpotlightTokenFactory(address(factoryProxy)).initialize(
             _SPOTLIGHT_TOKEN_FACTORY_OWNER, // owner_
             0.1 ether, // creationFee: 0.1 ether

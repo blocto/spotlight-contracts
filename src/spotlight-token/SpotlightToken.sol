@@ -13,12 +13,7 @@ import {MarketType, MarketState} from "./ISpotlightToken.sol";
 import {ReentrancyGuard} from "./ReentrancyGuard.sol";
 import {ISpotlightProtocolRewards} from "../spotlight-protocol-rewards/ISpotlightProtocolRewards.sol";
 
-contract SpotlightToken is
-    InitializableERC20,
-    ReentrancyGuard,
-    SpotlightTokenStorage,
-    ISpotlightToken
-{
+contract SpotlightToken is InitializableERC20, ReentrancyGuard, SpotlightTokenStorage, ISpotlightToken {
     constructor() InitializableERC20() {}
 
     modifier needInitialized() {
