@@ -40,51 +40,40 @@ contract Deploy is Script {
     */
 
     //@notice The address of the SUSDCToken contract on Odyssey.(https://odyssey.storyscan.xyz/address/0x40fCa9cB1AB15eD9B5bDA19A52ac00A78AE08e1D?tab=contract)
-    address private _SUSDCTokenAddr =
-        0x40fCa9cB1AB15eD9B5bDA19A52ac00A78AE08e1D;
-    address private _STORY_DERIVATIVE_WORKFLOWS_ADDRESS =
-        0xa8815CEB96857FFb8f5F8ce920b1Ae6D70254C7B;
-    address private _SPOTLIGHT_TOKEN_FACTORY_OWNER =
-        0x582d6944a8EA7e4ACD385D18DC95CF5915510289;
+    address private _SUSDCTokenAddr = 0x40fCa9cB1AB15eD9B5bDA19A52ac00A78AE08e1D;
+    address private _STORY_DERIVATIVE_WORKFLOWS_ADDRESS = 0xa8815CEB96857FFb8f5F8ce920b1Ae6D70254C7B;
+    address private _SPOTLIGHT_TOKEN_FACTORY_OWNER = 0x582d6944a8EA7e4ACD385D18DC95CF5915510289;
 
-    address private constant WRAPPER_IP =
-        0xe8CabF9d1FFB6CE23cF0a86641849543ec7BD7d5;
-    address private constant PIPERX_V2_ROUTER =
-        0x8812d810EA7CC4e1c3FB45cef19D6a7ECBf2D85D;
-    address private constant PIPERX_V2_FACTORY =
-        0x700722D24f9256Be288f56449E8AB1D27C4a70ca;
+    address private constant WRAPPER_IP = 0xe8CabF9d1FFB6CE23cF0a86641849543ec7BD7d5;
+    address private constant PIPERX_V2_ROUTER = 0x8812d810EA7CC4e1c3FB45cef19D6a7ECBf2D85D;
+    address private constant PIPERX_V2_FACTORY = 0x700722D24f9256Be288f56449E8AB1D27C4a70ca;
 
     function run() public {
         vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
 
         // @dev deploy spotlight token ip collection contract
         SpotlightTokenIPCollection tokenIpCollection = new SpotlightTokenIPCollection(
-                address(0) // token factory address, will be  set later
-            );
+            address(0) // token factory address, will be  set later
+        );
 
         // @dev deploy spotlight bonding curve contract
         SpotlightNativeBondingCurve bondingCurve = new SpotlightNativeBondingCurve(
-                690_000_000, // A=6.9*10^-6
-                2_878_200_000 // B=2.8782×10^−9
-            );
+            690_000_000, // A=6.9*10^-6
+            2_878_200_000 // B=2.8782×10^−9
+        );
 
         // @dev deploy spotlight token implementation contract
         SpotlightToken spotlightTokenImpl = new SpotlightToken();
 
         // @dev deploy spotlight token beacon contract
-        UpgradeableBeacon spotlightTokenBeacon = new UpgradeableBeacon(
-            address(spotlightTokenImpl),
-            _SPOTLIGHT_TOKEN_FACTORY_OWNER
-        );
+        UpgradeableBeacon spotlightTokenBeacon =
+            new UpgradeableBeacon(address(spotlightTokenImpl), _SPOTLIGHT_TOKEN_FACTORY_OWNER);
 
         // @dev deploy spotlight token factory implementation contract
         SpotlightTokenFactory factoryImpl = new SpotlightTokenFactory();
 
         // @dev deploy spotlight token factory beacon contract
-        UpgradeableBeacon factoryBeacon = new UpgradeableBeacon(
-            address(factoryImpl),
-            _SPOTLIGHT_TOKEN_FACTORY_OWNER
-        );
+        UpgradeableBeacon factoryBeacon = new UpgradeableBeacon(address(factoryImpl), _SPOTLIGHT_TOKEN_FACTORY_OWNER);
 
         // @dev deploy spotlight protocol rewards contract
         SpotlightProtocolRewards protocolRewards = new SpotlightProtocolRewards();
