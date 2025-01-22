@@ -2,12 +2,11 @@
 pragma solidity ^0.8.13;
 
 import "../lib/forge-std/src/Script.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {SpotlightTokenFactory} from "../src/spotlight-token-factory/SpotlightTokenFactory.sol";
 import {SpotlightTokenIPCollection} from "../src/spotlight-token-collection/SpotlightTokenIPCollection.sol";
 import {SpotlightNativeBondingCurve} from "../src/spotlight-bonding-curve/SpotlightNativeBondingCurve.sol";
-import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {SpotlightToken} from "../src/spotlight-token/SpotlightToken.sol";
-import {BeaconProxy} from "../src/beacon-proxy/BeaconProxy.sol";
 import {SpotlightProtocolRewards} from "../src/spotlight-protocol-rewards/SpotlightProtocolRewards.sol";
 
 contract Deploy is Script {
@@ -17,7 +16,7 @@ contract Deploy is Script {
      */
 
     /* Deploy and verify with the following command:
-        forge script script/Deploy.s.sol:Deploy  --broadcast \
+        forge script script/DeployTokenFactory.s.sol:Deploy  --broadcast \
         --chain-id 1516 \
         --rpc-url https://odyssey.storyrpc.io \
         --verify \
@@ -39,8 +38,6 @@ contract Deploy is Script {
         src/{CONTRACT_PATH}.sol:{CONTRACT_NAME}
     */
 
-    //@notice The address of the SUSDCToken contract on Odyssey.(https://odyssey.storyscan.xyz/address/0x40fCa9cB1AB15eD9B5bDA19A52ac00A78AE08e1D?tab=contract)
-    address private _SUSDCTokenAddr = 0x40fCa9cB1AB15eD9B5bDA19A52ac00A78AE08e1D;
     address private _STORY_DERIVATIVE_WORKFLOWS_ADDRESS = 0xa8815CEB96857FFb8f5F8ce920b1Ae6D70254C7B;
     address private _SPOTLIGHT_TOKEN_FACTORY_OWNER = 0x582d6944a8EA7e4ACD385D18DC95CF5915510289;
 
@@ -65,26 +62,20 @@ contract Deploy is Script {
         // @dev deploy spotlight token implementation contract
         SpotlightToken spotlightTokenImpl = new SpotlightToken();
 
-        // @dev deploy spotlight token beacon contract
-        UpgradeableBeacon spotlightTokenBeacon =
-            new UpgradeableBeacon(address(spotlightTokenImpl), _SPOTLIGHT_TOKEN_FACTORY_OWNER);
-
         // @dev deploy spotlight token factory implementation contract
         SpotlightTokenFactory factoryImpl = new SpotlightTokenFactory();
-
-        // @dev deploy spotlight token factory beacon contract
-        UpgradeableBeacon factoryBeacon = new UpgradeableBeacon(address(factoryImpl), _SPOTLIGHT_TOKEN_FACTORY_OWNER);
 
         // @dev deploy spotlight protocol rewards contract
         SpotlightProtocolRewards protocolRewards = new SpotlightProtocolRewards();
 
         // @dev deploy spotlight token factory proxy contract
-        BeaconProxy factoryProxy = new BeaconProxy(address(factoryBeacon));
+        TransparentUpgradeableProxy factoryProxy =
+            new TransparentUpgradeableProxy(address(factoryImpl), _SPOTLIGHT_TOKEN_FACTORY_OWNER, "");
         SpotlightTokenFactory(address(factoryProxy)).initialize(
             _SPOTLIGHT_TOKEN_FACTORY_OWNER, // owner_
             0.1 ether, // creationFee: 0.1 ether
             address(tokenIpCollection), // tokenIpCollection_
-            address(spotlightTokenBeacon), // tokenBeacon_
+            address(spotlightTokenImpl), // tokenImplementation_
             address(bondingCurve), // bondingCurve_
             WRAPPER_IP,
             _STORY_DERIVATIVE_WORKFLOWS_ADDRESS, // storyDerivativeWorkflows_

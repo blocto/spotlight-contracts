@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.13;
 
-import {BeaconProxyStorage} from "../beacon-proxy/BeaconProxyStorage.sol";
-import {BeaconProxy} from "../beacon-proxy/BeaconProxy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {ISpotlightTokenFactory} from "./ISpotlightTokenFactory.sol";
 import {ISpotlightToken} from "../spotlight-token/ISpotlightToken.sol";
 import {ISpotlightTokenIPCollection} from "../spotlight-token-collection/ISpotlightTokenIPCollection.sol";
@@ -14,7 +13,7 @@ import {SpotlightTokenFactoryStorage} from "./SpotlightTokenFactoryStorage.sol";
 import {ISpotlightBondingCurve} from "../spotlight-bonding-curve/ISpotlightBondingCurve.sol";
 import {MarketType} from "../spotlight-token/ISpotlightToken.sol";
 
-contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStorage, ISpotlightTokenFactory {
+contract SpotlightTokenFactory is SpotlightTokenFactoryStorage, ISpotlightTokenFactory {
     modifier needInitialized() {
         _checkIsInitialized();
         _;
@@ -39,7 +38,7 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
         address owner_,
         uint256 creationFee_,
         address tokenIpCollection_,
-        address tokenBeacon_,
+        address tokenImplementation_,
         address bondingCurve_,
         address baseToken_,
         address storyDerivativeWorkflows_,
@@ -53,7 +52,7 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
         _owner = owner_;
         _creationFee = creationFee_;
         _tokenIpCollection = tokenIpCollection_;
-        _tokenBeacon = tokenBeacon_;
+        _tokenImplementation = tokenImplementation_;
         _bondingCurve = bondingCurve_;
         _baseToken = baseToken_;
         _storyDerivativeWorkflows = storyDerivativeWorkflows_;
@@ -86,17 +85,17 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
     }
 
     /**
-     * @dev See {ISpotlightTokenFactory-bondingCurve}.
+     * @dev See {ISpotlightTokenFactory-tokenImplementation}.
      */
-    function tokenBeacon() public view needInitialized returns (address) {
-        return _tokenBeacon;
+    function tokenImplementation() public view needInitialized returns (address) {
+        return _tokenImplementation;
     }
 
     /**
-     * @dev See {ISpotlightTokenFactory-setTokenBeacon}.
+     * @dev See {ISpotlightTokenFactory-setTokenImplementation}.
      */
-    function setTokenBeacon(address newTokenBeacon) external needInitialized onlyOwner {
-        _tokenBeacon = newTokenBeacon;
+    function setTokenImplementation(address newTokenImplementation) external needInitialized onlyOwner {
+        _tokenImplementation = newTokenImplementation;
     }
 
     /**
@@ -159,11 +158,8 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
      * @dev See {ISpotlightTokenFactory-calculateTokenAddress}.
      */
     function calculateTokenAddress(address tokenCreator) external view needInitialized returns (address) {
-        bytes memory bytecode = _tokenCreateBytecode();
         bytes32 salt = _salt(tokenCreator);
-        bytes32 calculatedHash = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(bytecode)));
-
-        return address(uint160(uint256(calculatedHash)));
+        return Clones.predictDeterministicAddress(_tokenImplementation, salt, address(this));
     }
 
     /**
@@ -237,12 +233,6 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
         require(msg.sender == _owner, "SpotlightTokenFactory: Not owner");
     }
 
-    function _tokenCreateBytecode() internal view returns (bytes memory) {
-        bytes memory creationCode = type(BeaconProxy).creationCode;
-        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(_tokenBeacon));
-        return bytecode;
-    }
-
     function _salt(address account) internal view returns (bytes32) {
         return keccak256(abi.encodePacked(account, numberOfTokensCreated(account)));
     }
@@ -251,8 +241,7 @@ contract SpotlightTokenFactory is BeaconProxyStorage, SpotlightTokenFactoryStora
         internal
         returns (address)
     {
-        BeaconProxy tokenProxy = new BeaconProxy{salt: _salt(creator)}(_tokenBeacon);
-        address tokenAddress = address(tokenProxy);
+        address tokenAddress = Clones.cloneDeterministic(_tokenImplementation, _salt(creator));
         ISpotlightToken(tokenAddress).initialize(
             owner(),
             creator,

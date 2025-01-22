@@ -66,7 +66,7 @@ interface ISpotlightTokenFactory {
      * @param owner_ The address of the token factory owner.
      * @param creationFee_ The fee to create a token.
      * @param tokenIpCollection_ The address of the token IP collection contract.
-     * @param tokenBeacon_ The address of the token beacon contract.
+     * @param tokenImplementation_ The address of the token implementation contract.
      * @param bondingCurve_ The address of the bonding curve contract.
      * @param baseToken_ The address of the base token.
      * @param storyDerivativeWorkflows_ The address of the story derivative workflows contract.
@@ -78,7 +78,7 @@ interface ISpotlightTokenFactory {
         address owner_,
         uint256 creationFee_,
         address tokenIpCollection_,
-        address tokenBeacon_,
+        address tokenImplementation_,
         address bondingCurve_,
         address baseToken_,
         address storyDerivativeWorkflows_,
@@ -105,14 +105,14 @@ interface ISpotlightTokenFactory {
     function setTokenIpCollection(address newTokenIpCollection) external;
 
     /**
-     * @dev Returns the address of the token beacon contract
+     * @dev Returns the address of the token implementation contract
      */
-    function tokenBeacon() external view returns (address);
+    function tokenImplementation() external view returns (address);
 
     /**
-     * @dev Sets the address of the token beacon contract
+     * @dev Sets the address of the token implementation contract
      */
-    function setTokenBeacon(address newTokenBeacon) external;
+    function setTokenImplementation(address newTokenImplementation) external;
 
     /**
      * @dev Returns the fee amount required to create a token (in native token)
