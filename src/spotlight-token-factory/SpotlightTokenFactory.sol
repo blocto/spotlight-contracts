@@ -222,6 +222,8 @@ contract SpotlightTokenFactory is SpotlightTokenFactoryStorage, ISpotlightTokenF
         require(success, "SpotlightTokenFactory: Failed to claim fee");
     }
 
+    receive() external payable {}
+
     // @dev - private functions
     function _checkIsInitialized() internal view {
         if (!isInitialized()) {
@@ -237,23 +239,21 @@ contract SpotlightTokenFactory is SpotlightTokenFactoryStorage, ISpotlightTokenF
         return keccak256(abi.encodePacked(account, numberOfTokensCreated(account)));
     }
 
-    function _deploySpotlightToken(TokenCreationData memory tokenCreationData, address creator, address specificAddress)
+    function _deploySpotlightToken(TokenCreationData memory tokenCreationData, address creator, address ipAccount)
         internal
         returns (address)
     {
         address tokenAddress = Clones.cloneDeterministic(_tokenImplementation, _salt(creator));
         ISpotlightToken(tokenAddress).initialize(
-            owner(),
-            creator,
-            _bondingCurve,
-            _baseToken,
-            owner(),
             tokenCreationData.tokenName,
             tokenCreationData.tokenSymbol,
+            creator,
+            _bondingCurve,
+            address(this),
+            ipAccount,
+            _protocolRewards,
             _piperXRouter,
-            _piperXFactory,
-            specificAddress,
-            _protocolRewards
+            _piperXFactory
         );
         if (tokenAddress != tokenCreationData.predeployedTokenAddress) {
             revert("The address of the created token does not match the predeployed address");

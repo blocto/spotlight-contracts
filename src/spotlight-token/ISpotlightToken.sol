@@ -79,30 +79,26 @@ interface ISpotlightToken {
     /**
      * @dev Initializes the token.
      *
-     * @param owner_ The address of the token owner.
-     * @param tokenCreator_ The address of the token creator.
-     * @param bondingCurve_ The address of the bonding curve.
-     * @param baseToken_ The address of the base token.
-     * @param protocolFeeRecipient_ The address of the protocol fee recipient.
      * @param tokenName_ The name of the token.
      * @param tokenSymbol_ The symbol of the token.
+     * @param tokenCreator_ The address of the token creator.
+     * @param bondingCurve_ The address of the bonding curve.
+     * @param protocolFeeRecipient_ The address of the protocol fee recipient.
+     * @param ipAccount_ The address of the ipAccount.
+     * @param _rewardsVault The address of the reward vault.
      * @param piperXRouter_ The address of the piperX router.
      * @param piperXFactory_ The address of the piperX factory.
-     * @param specificAddress_ The address of the specific address.
-     * @param protocolRewards_ The address of the protocol rewards.
      */
     function initialize(
-        address owner_,
-        address tokenCreator_,
-        address bondingCurve_,
-        address baseToken_,
-        address protocolFeeRecipient_,
         string memory tokenName_,
         string memory tokenSymbol_,
+        address tokenCreator_,
+        address bondingCurve_,
+        address protocolFeeRecipient_,
+        address ipAccount_,
+        address _rewardsVault,
         address piperXRouter_,
-        address piperXFactory_,
-        address specificAddress_,
-        address protocolRewards_
+        address piperXFactory_
     ) external;
 
     /**
@@ -111,14 +107,14 @@ interface ISpotlightToken {
     function isInitialized() external view returns (bool);
 
     /**
-     * @dev Returns the address of the token owner.
-     */
-    function owner() external view returns (address);
-
-    /**
      * @dev Returns the address of the token creator.
      */
     function tokenCreator() external view returns (address);
+
+    /**
+     * @dev Returns the address of the bonding curve.
+     */
+    function bondingCurve() external view returns (address);
 
     /**
      * @dev Returns the address of the protocol fee recipient.
@@ -126,14 +122,19 @@ interface ISpotlightToken {
     function protocolFeeRecipient() external view returns (address);
 
     /**
-     * @dev Sets the address of the protocol fee recipient.
+     * @dev Returns the address of the rewards vault.
      */
-    function setProtocolFeeRecipient(address newRecipient) external;
+    function rewardsVault() external view returns (address);
 
     /**
-     * @dev Returns the address of the bonding curve.
+     * @dev Returns the address of the piperX router.
      */
-    function bondingCurve() external view returns (address);
+    function piperXRouter() external view returns (address);
+
+    /**
+     * @dev Returns the address of the piperX factory.
+     */
+    function piperXFactory() external view returns (address);
 
     /**
      * @dev Returns the current market state.

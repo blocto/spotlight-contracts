@@ -22,7 +22,7 @@ contract SpotlightProtocolRewards is ISpotlightProtocolRewards, Ownable {
     error TransferFailed();
     error TokenCallFailed();
     error WithdrawDisabled();
-    error IpaIdsEmpty();
+    error IPAccountsEmpty();
 
     modifier onlyWithdrawEnabled() {
         if (!_withdrawEnabled) revert WithdrawDisabled();
@@ -41,14 +41,14 @@ contract SpotlightProtocolRewards is ISpotlightProtocolRewards, Ownable {
     /*
      * @dev Deposit protocol rewards
      *
-     * @param ipaId The IpaId to deposit rewards for
+     * @param ipAccount The IPAccount to deposit rewards for
      */
-    function deposit(address ipaId) external payable {
-        if (ipaId == address(0)) revert AddressZero();
+    function deposit(address ipAccount) external payable {
+        if (ipAccount == address(0)) revert AddressZero();
         uint256 amount = msg.value;
         if (amount == 0) revert AmountZero();
 
-        (, address tokenContract, uint256 tokenId) = _getToken(ipaId);
+        (, address tokenContract, uint256 tokenId) = _getToken(ipAccount);
         _rewards[tokenContract][tokenId] += amount;
 
         emit Deposit(tokenContract, tokenId, amount);
@@ -57,12 +57,12 @@ contract SpotlightProtocolRewards is ISpotlightProtocolRewards, Ownable {
     /*
      * @dev Withdraw protocol rewards
      *
-     * @param ipaId The IpaId to withdraw rewards from
+     * @param ipAccount The IPAccount to withdraw rewards from
      */
-    function withdraw(address ipaId) external onlyWithdrawEnabled {
-        if (ipaId == address(0)) revert AddressZero();
+    function withdraw(address ipAccount) external onlyWithdrawEnabled {
+        if (ipAccount == address(0)) revert AddressZero();
 
-        (, address tokenContract, uint256 tokenId) = _getToken(ipaId);
+        (, address tokenContract, uint256 tokenId) = _getToken(ipAccount);
         if (!_checkIsOwner(tokenContract, tokenId)) revert InvalidWithdraw();
 
         uint256 ownerRewards = this.rewardsOf(tokenContract, tokenId);
@@ -79,19 +79,19 @@ contract SpotlightProtocolRewards is ISpotlightProtocolRewards, Ownable {
     /*
      * @dev Withdraw protocol rewards
      *
-     * @param ipaIds Array of IpaIds to withdraw rewards from
+     * @param ipAccounts Array of IPAccounts to withdraw rewards from
      */
-    function withdrawAll(address[] calldata ipaIds) external onlyWithdrawEnabled {
-        if (ipaIds.length == 0) revert IpaIdsEmpty();
+    function withdrawAll(address[] calldata ipAccounts) external onlyWithdrawEnabled {
+        if (ipAccounts.length == 0) revert IPAccountsEmpty();
 
         uint256 totalAmount;
-        WithdrawInfo[] memory withdrawals = new WithdrawInfo[](ipaIds.length);
+        WithdrawInfo[] memory withdrawals = new WithdrawInfo[](ipAccounts.length);
 
-        for (uint256 i = 0; i < ipaIds.length; i++) {
-            address ipaId = ipaIds[i];
-            if (ipaId == address(0)) revert AddressZero();
+        for (uint256 i = 0; i < ipAccounts.length; i++) {
+            address ipAccount = ipAccounts[i];
+            if (ipAccount == address(0)) revert AddressZero();
 
-            (, address tokenContract, uint256 tokenId) = _getToken(ipaId);
+            (, address tokenContract, uint256 tokenId) = _getToken(ipAccount);
             if (!_checkIsOwner(tokenContract, tokenId)) {
                 revert InvalidWithdraw();
             }
@@ -130,16 +130,16 @@ contract SpotlightProtocolRewards is ISpotlightProtocolRewards, Ownable {
     }
 
     /*
-     * @dev Get the specific rewards for an IpaId
+     * @dev Get the specific rewards for an IPAccount
      *
-     * @param ipaId The address to check the rewards for
+     * @param ipAccount The address to check the rewards for
      *
-     * @return uint256 The specific rewards for the IpaId
+     * @return uint256 The specific rewards for the IPAccount
      */
-    function rewardsOf(address ipaId) external view returns (uint256) {
-        if (ipaId == address(0)) revert AddressZero();
+    function rewardsOf(address ipAccount) external view returns (uint256) {
+        if (ipAccount == address(0)) revert AddressZero();
 
-        (, address tokenContract, uint256 tokenId) = _getToken(ipaId);
+        (, address tokenContract, uint256 tokenId) = _getToken(ipAccount);
         return this.rewardsOf(tokenContract, tokenId);
     }
 
@@ -159,14 +159,18 @@ contract SpotlightProtocolRewards is ISpotlightProtocolRewards, Ownable {
 
     /*
      * @dev Internal function to get token info using low level call
-     * @param ipaId The address of the contract to call
+     * @param ipAccount The address of the contract to call
      *
      * @return chainId The EIP-155 ID of the chain the token exists on
      * @return tokenContract The contract address of the token
      * @return tokenId The ID of the token
      */
-    function _getToken(address ipaId) internal view returns (uint256 chainId, address tokenContract, uint256 tokenId) {
-        (chainId, tokenContract, tokenId) = IMinimalIPAccount(ipaId).token();
+    function _getToken(address ipAccount)
+        internal
+        view
+        returns (uint256 chainId, address tokenContract, uint256 tokenId)
+    {
+        (chainId, tokenContract, tokenId) = IMinimalIPAccount(ipAccount).token();
         if (tokenContract == address(0)) revert AddressZero();
     }
 

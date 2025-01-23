@@ -2,7 +2,8 @@
 pragma solidity ^0.8.13;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {InitializableERC20} from "./InitializableERC20.sol";
+import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {ISpotlightToken} from "./ISpotlightToken.sol";
 import {SpotlightTokenStorage} from "./SpotlightTokenStorage.sol";
 import {ISpotlightBondingCurve} from "../spotlight-bonding-curve/ISpotlightBondingCurve.sol";
@@ -10,19 +11,15 @@ import {IWETH} from "../interfaces/IWETH.sol";
 import {IUniswapV2Router02} from "../interfaces/IUniswapV2Router02.sol";
 import {IUniswapV2Factory} from "../interfaces/IUniswapV2Factory.sol";
 import {MarketType, MarketState} from "./ISpotlightToken.sol";
-import {ReentrancyGuard} from "./ReentrancyGuard.sol";
 import {ISpotlightProtocolRewards} from "../spotlight-protocol-rewards/ISpotlightProtocolRewards.sol";
 
-contract SpotlightToken is InitializableERC20, ReentrancyGuard, SpotlightTokenStorage, ISpotlightToken {
-    constructor() InitializableERC20() {}
+contract SpotlightToken is ERC20Upgradeable, ReentrancyGuardTransient, SpotlightTokenStorage, ISpotlightToken {
+    constructor() {
+        _disableInitializers();
+    }
 
     modifier needInitialized() {
         _checkIsInitialized();
-        _;
-    }
-
-    modifier onlyOwner() {
-        _checkIsOwner();
         _;
     }
 
@@ -37,73 +34,40 @@ contract SpotlightToken is InitializableERC20, ReentrancyGuard, SpotlightTokenSt
      * @dev See {ISpotlightToken-initialize}.
      */
     function initialize(
-        address owner_,
-        address tokenCreator_,
-        address bondingCurve_,
-        address baseToken_,
-        address protocolFeeRecipient_,
         string memory tokenName_,
         string memory tokenSymbol_,
+        address tokenCreator_,
+        address bondingCurve_,
+        address protocolFeeRecipient_,
+        address ipAccount_,
+        address rewardsVault_,
         address piperXRouter_,
-        address piperXFactory_,
-        address specificAddress_,
-        address protocolRewards_
-    ) external {
-        if (isInitialized()) {
-            revert("SpotlightToken: Already initialized");
-        }
-
-        _owner = owner_;
+        address piperXFactory_
+    ) external initializer {
+        __ERC20_init(tokenName_, tokenSymbol_);
         _tokenCreator = tokenCreator_;
-        _protocolFeeRecipient = protocolFeeRecipient_;
         _bondingCurve = bondingCurve_;
-        _baseToken = baseToken_;
-        _tokenName = tokenName_;
-        _tokenSymbol = tokenSymbol_;
-
-        _isInitialized = true;
-        _marketType = MarketType.BONDING_CURVE;
+        _protocolFeeRecipient = protocolFeeRecipient_;
+        _ipAccount = ipAccount_;
+        _rewardsVault = rewardsVault_;
         _piperXRouter = piperXRouter_;
         _piperXFactory = piperXFactory_;
-        _specificAddress = specificAddress_;
-        _protocolRewards = protocolRewards_;
 
-        __ReentrancyGuard_init();
+        _marketType = MarketType.BONDING_CURVE;
     }
 
-    /*
-     * @dev See {ISpotlightToken-isInitialized}.
+    /**
+     * @dev Returns `true` if the contract is initialized.
      */
     function isInitialized() public view returns (bool) {
-        return _isInitialized;
-    }
-
-    /*
-     * @dev See {ISpotlightToken-owner}.
-     */
-    function owner() public view needInitialized returns (address) {
-        return _owner;
+        return _getInitializedVersion() == 1;
     }
 
     /*
      * @dev See {ISpotlightToken-tokenCreator}.
      */
-    function tokenCreator() public view needInitialized returns (address) {
+    function tokenCreator() public view returns (address) {
         return _tokenCreator;
-    }
-
-    /*
-     * @dev See {ISpotlightToken-baseToken}.
-     */
-    function protocolFeeRecipient() public view needInitialized returns (address) {
-        return _protocolFeeRecipient;
-    }
-
-    /*
-     * @dev See {ISpotlightToken-setProtocolFeeRecipient}.
-     */
-    function setProtocolFeeRecipient(address newRecipient) external needInitialized onlyOwner {
-        _protocolFeeRecipient = newRecipient;
     }
 
     /*
@@ -111,6 +75,34 @@ contract SpotlightToken is InitializableERC20, ReentrancyGuard, SpotlightTokenSt
      */
     function bondingCurve() public view returns (address) {
         return _bondingCurve;
+    }
+
+    /*
+     * @dev See {ISpotlightToken-protocolFeeRecipient}.
+     */
+    function protocolFeeRecipient() public view returns (address) {
+        return _protocolFeeRecipient;
+    }
+
+    /*
+     * @dev See {ISpotlightToken-rewardsVault}.
+     */
+    function rewardsVault() public view returns (address) {
+        return _rewardsVault;
+    }
+
+    /*
+     * @dev See {ISpotlightToken-piperXRouter}.
+     */
+    function piperXRouter() public view returns (address) {
+        return _piperXRouter;
+    }
+
+    /*
+     * @dev See {ISpotlightToken-piperXFactory}.
+     */
+    function piperXFactory() public view returns (address) {
+        return _piperXFactory;
     }
 
     /*
@@ -124,7 +116,7 @@ contract SpotlightToken is InitializableERC20, ReentrancyGuard, SpotlightTokenSt
     }
 
     /*
-     * @dev See {ISpotlightToken-setBondingCurve}.
+     * @dev See {ISpotlightToken-buyWithIP}.
      */
     function buyWithIP(address recipient, uint256 minTokenOut, MarketType expectedMarketType)
         public
@@ -143,21 +135,17 @@ contract SpotlightToken is InitializableERC20, ReentrancyGuard, SpotlightTokenSt
 
         if (_marketType == MarketType.PIPERX_POOL) {
             totalCost = msg.value;
-            IWETH(_baseToken).deposit{value: totalCost}();
-            IERC20(_baseToken).approve(_piperXRouter, totalCost);
 
             address[] memory path = new address[](2);
-            path[0] = _baseToken;
+            path[0] = IUniswapV2Router02(_piperXRouter).WETH();
             path[1] = address(this);
 
-            uint256[] memory amounts = IUniswapV2Router02(_piperXRouter).swapExactTokensForTokens(
-                totalCost, minTokenOut, path, recipient, block.timestamp
+            uint256[] memory amounts = IUniswapV2Router02(_piperXRouter).swapExactETHForTokens{value: totalCost}(
+                minTokenOut, path, recipient, block.timestamp
             );
 
             trueOrderSize = amounts[1];
-        }
-
-        if (_marketType == MarketType.BONDING_CURVE) {
+        } else if (_marketType == MarketType.BONDING_CURVE) {
             bool shouldGraduateMarket;
             (totalCost, trueOrderSize, fee, refund, shouldGraduateMarket) = _validateBondingCurveBuy(minTokenOut);
 
@@ -198,23 +186,18 @@ contract SpotlightToken is InitializableERC20, ReentrancyGuard, SpotlightTokenSt
 
         if (_marketType == MarketType.PIPERX_POOL) {
             address[] memory path = new address[](2);
-            path[0] = _baseToken;
+            path[0] = IUniswapV2Router02(_piperXRouter).WETH();
             path[1] = address(this);
 
             uint256[] memory amountIns = IUniswapV2Router02(_piperXRouter).getAmountsIn(tokenAmount, path);
             uint256 amountIn = amountIns[0];
 
-            IWETH(_baseToken).deposit{value: amountIn}();
-            IERC20(_baseToken).approve(_piperXRouter, amountIn);
-
-            uint256[] memory amounts = IUniswapV2Router02(_piperXRouter).swapTokensForExactTokens(
-                tokenAmount, amountIn, path, recipient, block.timestamp
+            uint256[] memory amounts = IUniswapV2Router02(_piperXRouter).swapETHForExactTokens{value: amountIn}(
+                tokenAmount, path, recipient, block.timestamp
             );
 
             trueOrderSize = amounts[1];
-        }
-
-        if (_marketType == MarketType.BONDING_CURVE) {
+        } else if (_marketType == MarketType.BONDING_CURVE) {
             bool shouldGraduateMarket;
             (totalCost, trueOrderSize, fee, refund, shouldGraduateMarket) = _validateBondingCurveBuyToken(tokenAmount);
 
@@ -251,10 +234,8 @@ contract SpotlightToken is InitializableERC20, ReentrancyGuard, SpotlightTokenSt
         }
 
         if (_marketType == MarketType.PIPERX_POOL) {
-            _handleUniswapSell(tokenAmount, minIPOut);
-        }
-
-        if (_marketType == MarketType.BONDING_CURVE) {
+            _handleUniswapSell(tokenAmount, minIPOut, recipient);
+        } else if (_marketType == MarketType.BONDING_CURVE) {
             uint256 truePayoutSize;
             uint256 payoutAfterFee;
             truePayoutSize = _handleBondingCurveSell(tokenAmount, minIPOut);
@@ -272,7 +253,7 @@ contract SpotlightToken is InitializableERC20, ReentrancyGuard, SpotlightTokenSt
     }
 
     receive() external payable {
-        if (msg.sender == _baseToken) {
+        if (msg.sender == IUniswapV2Router02(_piperXRouter).WETH()) {
             return;
         }
 
@@ -282,17 +263,15 @@ contract SpotlightToken is InitializableERC20, ReentrancyGuard, SpotlightTokenSt
     /*
      * @dev See {ISpotlightToken-getIPBuyQuote}.
      */
-    function getIPBuyQuote(uint256 ipOrderSize) public view needInitialized returns (uint256 tokensOut) {
+    function getIPBuyQuote(uint256 ipOrderSize) public view returns (uint256 tokensOut) {
         if (_marketType == MarketType.PIPERX_POOL) {
             address[] memory path = new address[](2);
-            path[0] = _baseToken;
+            path[0] = IUniswapV2Router02(_piperXRouter).WETH();
             path[1] = address(this);
 
             uint256[] memory amounts = IUniswapV2Router02(_piperXRouter).getAmountsOut(ipOrderSize, path);
             tokensOut = amounts[1];
-        }
-
-        if (_marketType == MarketType.BONDING_CURVE) {
+        } else if (_marketType == MarketType.BONDING_CURVE) {
             tokensOut = ISpotlightBondingCurve(_bondingCurve).getBaseTokenBuyQuote(totalSupply(), ipOrderSize);
         }
     }
@@ -300,16 +279,15 @@ contract SpotlightToken is InitializableERC20, ReentrancyGuard, SpotlightTokenSt
     /*
      * @dev See {ISpotlightToken-getTokenBuyQuote}.
      */
-    function getTokenBuyQuote(uint256 tokenOrderSize) public view needInitialized returns (uint256 ipIn) {
+    function getTokenBuyQuote(uint256 tokenOrderSize) public view returns (uint256 ipIn) {
         if (_marketType == MarketType.PIPERX_POOL) {
             address[] memory path = new address[](2);
-            path[0] = _baseToken;
+            path[0] = IUniswapV2Router02(_piperXRouter).WETH();
             path[1] = address(this);
 
             uint256[] memory amounts = IUniswapV2Router02(_piperXRouter).getAmountsIn(tokenOrderSize, path);
             ipIn = amounts[0];
-        }
-        if (_marketType == MarketType.BONDING_CURVE) {
+        } else if (_marketType == MarketType.BONDING_CURVE) {
             ipIn = ISpotlightBondingCurve(_bondingCurve).getTargetTokenBuyQuote(totalSupply(), tokenOrderSize);
         }
     }
@@ -317,17 +295,15 @@ contract SpotlightToken is InitializableERC20, ReentrancyGuard, SpotlightTokenSt
     /*
      * @dev See {ISpotlightToken-getTokenSellQuote}.
      */
-    function getTokenSellQuote(uint256 tokenOrderSize) public view needInitialized returns (uint256 ipOut) {
+    function getTokenSellQuote(uint256 tokenOrderSize) public view returns (uint256 ipOut) {
         if (_marketType == MarketType.PIPERX_POOL) {
             address[] memory path = new address[](2);
             path[0] = address(this);
-            path[1] = _baseToken;
+            path[1] = IUniswapV2Router02(_piperXRouter).WETH();
 
             uint256[] memory amounts = IUniswapV2Router02(_piperXRouter).getAmountsOut(tokenOrderSize, path);
             ipOut = amounts[1];
-        }
-
-        if (_marketType == MarketType.BONDING_CURVE) {
+        } else if (_marketType == MarketType.BONDING_CURVE) {
             ipOut = ISpotlightBondingCurve(_bondingCurve).getTargetTokenSellQuote(totalSupply(), tokenOrderSize);
         }
     }
@@ -335,7 +311,7 @@ contract SpotlightToken is InitializableERC20, ReentrancyGuard, SpotlightTokenSt
     /*
      * @dev See {ISpotlightToken-getIPBuyQuoteWithFee}.
      */
-    function getIPBuyQuoteWithFee(uint256 ipOrderSize) public view needInitialized returns (uint256 tokensOut) {
+    function getIPBuyQuoteWithFee(uint256 ipOrderSize) public view returns (uint256 tokensOut) {
         if (_marketType == MarketType.PIPERX_POOL) revert InvalidMarketType();
 
         uint256 tradingFee = _calculateFee(ipOrderSize, TOTAL_FEE_BPS);
@@ -346,7 +322,7 @@ contract SpotlightToken is InitializableERC20, ReentrancyGuard, SpotlightTokenSt
     /*
      * @dev See {ISpotlightToken-getTokenBuyQuoteWithFee}.
      */
-    function getTokenBuyQuoteWithFee(uint256 tokenOrderSize) public view needInitialized returns (uint256 ipIn) {
+    function getTokenBuyQuoteWithFee(uint256 tokenOrderSize) public view returns (uint256 ipIn) {
         if (_marketType == MarketType.PIPERX_POOL) revert InvalidMarketType();
 
         uint256 ipNeeded = ISpotlightBondingCurve(_bondingCurve).getTargetTokenBuyQuote(totalSupply(), tokenOrderSize);
@@ -358,7 +334,7 @@ contract SpotlightToken is InitializableERC20, ReentrancyGuard, SpotlightTokenSt
     /*
      * @dev See {ISpotlightToken-getTokenSellQuoteWithFee}.
      */
-    function getTokenSellQuoteWithFee(uint256 tokenOrderSize) public view needInitialized returns (uint256 ipOut) {
+    function getTokenSellQuoteWithFee(uint256 tokenOrderSize) public view returns (uint256 ipOut) {
         if (_marketType == MarketType.PIPERX_POOL) revert InvalidMarketType();
 
         uint256 ipFromTrading =
@@ -367,13 +343,8 @@ contract SpotlightToken is InitializableERC20, ReentrancyGuard, SpotlightTokenSt
         ipOut = ipFromTrading - tradingFee;
     }
 
-    // @dev Private functions
-    function _checkIsOwner() internal view {
-        require(msg.sender == _owner, "SpotlightToken: Not owner");
-    }
-
     function _checkIsInitialized() internal view {
-        require(_isInitialized, "SpotlightToken: Not initialized");
+        require(isInitialized(), "SpotlightToken: Not initialized");
     }
 
     function _handleBondingCurveSell(uint256 tokensToSell, uint256 minPayoutSize) private returns (uint256) {
@@ -387,16 +358,19 @@ contract SpotlightToken is InitializableERC20, ReentrancyGuard, SpotlightTokenSt
         return payout;
     }
 
-    function _handleUniswapSell(uint256 tokensToSell, uint256 minPayoutSize) private returns (uint256) {
+    function _handleUniswapSell(uint256 tokensToSell, uint256 minPayoutSize, address recipient)
+        private
+        returns (uint256)
+    {
         transfer(address(this), tokensToSell);
         this.approve(address(_piperXRouter), tokensToSell);
 
         address[] memory path = new address[](2);
         path[0] = address(this);
-        path[1] = _baseToken;
+        path[1] = IUniswapV2Router02(_piperXRouter).WETH();
 
         uint256[] memory amounts = IUniswapV2Router02(_piperXRouter).swapExactTokensForETH(
-            tokensToSell, minPayoutSize, path, msg.sender, block.timestamp
+            tokensToSell, minPayoutSize, path, recipient, block.timestamp
         );
 
         return amounts[1];
@@ -466,19 +440,19 @@ contract SpotlightToken is InitializableERC20, ReentrancyGuard, SpotlightTokenSt
     }
 
     function _disperseFees(uint256 _fee) internal {
-        if (_specificAddress == address(0)) {
+        if (_ipAccount == address(0)) {
             (bool success,) = _protocolFeeRecipient.call{value: _fee}("");
             if (!success) revert IPTransferFailed();
             return;
         }
 
-        uint256 protocolFee = _calculateFee(_fee, PROTOCOL_TRADING_FEE_BPS);
-        uint256 specificAddressFee = _calculateFee(_fee, SPECIFIC_ADDRESS_FEE_BPS);
+        uint256 ipAccountFee = _calculateFee(_fee, IP_ACCOUNT_FEE_BPS);
+        uint256 protocolFee = _fee - ipAccountFee; // others are protocol fees
 
         (bool protocolSuccess,) = _protocolFeeRecipient.call{value: protocolFee}("");
         if (!protocolSuccess) revert IPTransferFailed();
 
-        ISpotlightProtocolRewards(_protocolRewards).deposit{value: specificAddressFee}(_specificAddress);
+        ISpotlightProtocolRewards(_rewardsVault).deposit{value: ipAccountFee}(_ipAccount);
     }
 
     function _graduateMarket() internal {
@@ -488,17 +462,16 @@ contract SpotlightToken is InitializableERC20, ReentrancyGuard, SpotlightTokenSt
         if (!success) revert IPTransferFailed();
 
         uint256 ethLiquidity = address(this).balance;
-        IWETH(_baseToken).deposit{value: ethLiquidity}();
+
         _mint(address(this), SECONDARY_MARKET_SUPPLY);
+        IERC20(address(this)).approve(_piperXRouter, SECONDARY_MARKET_SUPPLY);
 
-        IERC20(_baseToken).approve(address(_piperXRouter), ethLiquidity);
-        IERC20(address(this)).approve(address(_piperXRouter), SECONDARY_MARKET_SUPPLY);
+        (uint256 amountToken, uint256 amountETH, uint256 liquidity) = IUniswapV2Router02(_piperXRouter).addLiquidityETH{
+            value: ethLiquidity
+        }(address(this), SECONDARY_MARKET_SUPPLY, SECONDARY_MARKET_SUPPLY, ethLiquidity, address(0), block.timestamp);
 
-        (uint256 amountToken, uint256 amountETH, uint256 liquidity) = IUniswapV2Router02(_piperXRouter).addLiquidity(
-            address(this), _baseToken, SECONDARY_MARKET_SUPPLY, ethLiquidity, 0, 0, address(this), block.timestamp
-        );
-
-        _pairAddress = IUniswapV2Factory(_piperXFactory).getPair(address(this), _baseToken);
+        _pairAddress =
+            IUniswapV2Factory(_piperXFactory).getPair(address(this), IUniswapV2Router02(_piperXRouter).WETH());
 
         emit SpotlightTokenGraduated(address(this), _pairAddress, amountETH, amountToken, liquidity, _marketType);
     }
