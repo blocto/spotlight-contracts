@@ -223,10 +223,8 @@ contract SpotlightTokenTest is Test {
         uint256 USER_BUY_AMOUNT = 1 ether;
         uint256 protocolTradingFee = _calculateFee(USER_BUY_AMOUNT, TOTAL_FEE_BPS);
         uint256 ipAccountReward = _calculateFee(protocolTradingFee, IP_ACCOUNT_FEE_BPS);
-        uint256 expectedProtocolRewardsBalance =
-            address(_rewardsVault).balance + ipAccountReward;
-        uint256 expectedFactoryBalance =
-            address(_factory).balance + (protocolTradingFee - ipAccountReward);
+        uint256 expectedProtocolRewardsBalance = address(_rewardsVault).balance + ipAccountReward;
+        uint256 expectedFactoryBalance = address(_factory).balance + (protocolTradingFee - ipAccountReward);
 
         vm.deal(_buyer, USER_BUY_AMOUNT);
         vm.startPrank(_buyer);
