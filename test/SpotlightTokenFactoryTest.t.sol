@@ -10,6 +10,7 @@ import {ISpotlightTokenFactory} from "../src/spotlight-token-factory/ISpotlightT
 import {StoryWorkflowStructs} from "../src/spotlight-token-factory/story-workflow-interfaces/StoryWorkflowStructs.sol";
 import {SpotlightNativeBondingCurve} from "../src/spotlight-bonding-curve/SpotlightNativeBondingCurve.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {SpotlightProtocolRewards} from "../src/spotlight-protocol-rewards/SpotlightProtocolRewards.sol";
 
 contract SpotlightTokenFactoryTest is Test {
@@ -20,62 +21,54 @@ contract SpotlightTokenFactoryTest is Test {
     SpotlightTokenFactory private _factory;
     address private _factoryAddress;
 
+    SpotlightToken private _spotlightTokenImpl;
     SpotlightTokenIPCollection private _tokenIpCollection;
     SpotlightNativeBondingCurve private _bondingCurve;
-    SpotlightProtocolRewards private _protocolRewards;
-    address private constant Wrapper_IP = 0xe8CabF9d1FFB6CE23cF0a86641849543ec7BD7d5;
+    SpotlightProtocolRewards private _rewardsVault;
+    address private constant _piperXRouter = address(0);
+    address private constant _piperXFactory = address(0);
 
     function setUp() public {
         _factoryOwner = makeAddr("factoryOwner");
         _mockStoryWorkflows = new MockStoryDerivativeWorkflows();
-        SpotlightToken spotlightTokenImpl = new SpotlightToken();
+        _spotlightTokenImpl = new SpotlightToken();
 
         vm.startPrank(_factoryOwner);
         _factory = new SpotlightTokenFactory();
         _factoryAddress = address(_factory);
         _tokenIpCollection = new SpotlightTokenIPCollection(_factoryAddress);
         _bondingCurve = new SpotlightNativeBondingCurve(1060848709, 4379701787);
-        _protocolRewards = new SpotlightProtocolRewards();
+        _rewardsVault = new SpotlightProtocolRewards();
 
         _factory.initialize(
             _factoryOwner,
             DEFAULT_CREATION_FEE,
             address(_tokenIpCollection),
-            address(spotlightTokenImpl),
+            address(_spotlightTokenImpl),
             address(_bondingCurve),
-            Wrapper_IP,
             address(_mockStoryWorkflows),
-            address(0),
-            address(0),
-            address(_protocolRewards)
+            address(_piperXRouter),
+            address(_piperXFactory),
+            address(_rewardsVault)
         );
         vm.stopPrank();
+    }
+
+    function testImplementationIsInitialized() public {
+        SpotlightTokenFactory factory = new SpotlightTokenFactory();
+        assertFalse(factory.isInitialized());
     }
 
     function testTokenFactoryConstructor() public view {
         assertEq(_factory.owner(), _factoryOwner);
         assertEq(_factory.createTokenFee(), DEFAULT_CREATION_FEE);
+        assertEq(_factory.tokenIpCollection(), address(_tokenIpCollection));
+        assertEq(_factory.tokenImplementation(), address(_spotlightTokenImpl));
+        assertEq(_factory.bondingCurve(), address(_bondingCurve));
         assertEq(_factory.storyDerivativeWorkflows(), address(_mockStoryWorkflows));
-    }
-
-    function testNotOwnerSetTokenIpCollection() public {
-        address notOwner = makeAddr("notOwner");
-
-        vm.startPrank(notOwner);
-        vm.expectRevert();
-        _factory.setTokenIpCollection(makeAddr("newTokenIpCollection"));
-        vm.stopPrank();
-    }
-
-    function testSetTokneIpCollection() public {
-        vm.startPrank(_factoryOwner);
-        SpotlightTokenIPCollection tokenIpCollection = new SpotlightTokenIPCollection(_factoryAddress);
-        address tokenIpCollectionAddress = address(tokenIpCollection);
-        _factory.setTokenIpCollection(tokenIpCollectionAddress);
-        vm.stopPrank();
-        assertEq(_factory.tokenIpCollection(), tokenIpCollectionAddress);
-        assertEq(tokenIpCollection.owner(), _factoryOwner);
-        assertEq(tokenIpCollection.tokenFactory(), _factoryAddress);
+        assertEq(_factory.piperXRouter(), _piperXRouter);
+        assertEq(_factory.piperXFactory(), _piperXFactory);
+        assertEq(_factory.rewardsVault(), address(_rewardsVault));
     }
 
     function testNotOwnerSetCreationFee() public {
@@ -83,7 +76,7 @@ contract SpotlightTokenFactoryTest is Test {
         uint256 creationFee = DEFAULT_CREATION_FEE;
 
         vm.startPrank(notOwner);
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, notOwner));
         _factory.setCreateTokenFee(creationFee);
         vm.stopPrank();
     }
@@ -97,23 +90,42 @@ contract SpotlightTokenFactoryTest is Test {
         assertEq(_factory.createTokenFee(), creationFee);
     }
 
-    function testNotOwnerSetStoryDerivativeWorkflows() public {
+    function testNotOwnerSetTokenImplementation() public {
         address notOwner = makeAddr("notOwner");
-        address newStoryDerivativeWorkflows = makeAddr("newStoryDerivativeWorkflows");
+        address newTokenImplementation = makeAddr("newTokenImplementation");
 
         vm.startPrank(notOwner);
-        vm.expectRevert();
-        _factory.setStoryDerivativeWorkflows(newStoryDerivativeWorkflows);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, notOwner));
+        _factory.setTokenImplementation(newTokenImplementation);
         vm.stopPrank();
     }
 
-    function testSetStoryDerivativeWorkflows() public {
-        address newStoryDerivativeWorkflows = makeAddr("newStoryDerivativeWorkflows");
+    function testSetTokenImplementation() public {
+        address newTokenImplementation = makeAddr("newTokenImplementation");
 
         vm.startPrank(_factoryOwner);
-        _factory.setStoryDerivativeWorkflows(newStoryDerivativeWorkflows);
+        _factory.setTokenImplementation(newTokenImplementation);
         vm.stopPrank();
-        assertEq(_factory.storyDerivativeWorkflows(), newStoryDerivativeWorkflows);
+        assertEq(_factory.tokenImplementation(), newTokenImplementation);
+    }
+
+    function testNotOwnerSetBondingCurve() public {
+        address notOwner = makeAddr("notOwner");
+        address newBondingCurve = makeAddr("bondingCurve");
+
+        vm.startPrank(notOwner);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, notOwner));
+        _factory.setBondingCurve(newBondingCurve);
+        vm.stopPrank();
+    }
+
+    function testSetBondingCurve() public {
+        address newBondingCurve = makeAddr("newBondingCurve");
+
+        vm.startPrank(_factoryOwner);
+        _factory.setBondingCurve(newBondingCurve);
+        vm.stopPrank();
+        assertEq(_factory.bondingCurve(), newBondingCurve);
     }
 
     function testCalculateTokenAddress() public {
@@ -284,7 +296,7 @@ contract SpotlightTokenFactoryTest is Test {
         address nonOwner = makeAddr("nonOwner");
 
         vm.startPrank(nonOwner);
-        vm.expectRevert("SpotlightTokenFactory: Not owner");
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nonOwner));
         _factory.claimFee(address(nonOwner));
         vm.stopPrank();
     }

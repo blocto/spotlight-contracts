@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ISpotlightTokenFactory} from "./ISpotlightTokenFactory.sol";
 import {ISpotlightToken} from "../spotlight-token/ISpotlightToken.sol";
 import {ISpotlightTokenIPCollection} from "../spotlight-token-collection/ISpotlightTokenIPCollection.sol";
@@ -13,14 +14,9 @@ import {SpotlightTokenFactoryStorage} from "./SpotlightTokenFactoryStorage.sol";
 import {ISpotlightBondingCurve} from "../spotlight-bonding-curve/ISpotlightBondingCurve.sol";
 import {MarketType} from "../spotlight-token/ISpotlightToken.sol";
 
-contract SpotlightTokenFactory is SpotlightTokenFactoryStorage, ISpotlightTokenFactory {
+contract SpotlightTokenFactory is OwnableUpgradeable, SpotlightTokenFactoryStorage, ISpotlightTokenFactory {
     modifier needInitialized() {
         _checkIsInitialized();
-        _;
-    }
-
-    modifier onlyOwner() {
-        _checkIsOwner();
         _;
     }
 
@@ -28,7 +24,7 @@ contract SpotlightTokenFactory is SpotlightTokenFactoryStorage, ISpotlightTokenF
      * @dev See {ISpotlightTokenFactory-isInitialized}.
      */
     function isInitialized() public view returns (bool) {
-        return _isInitialized;
+        return _getInitializedVersion() == 1;
     }
 
     /**
@@ -40,68 +36,26 @@ contract SpotlightTokenFactory is SpotlightTokenFactoryStorage, ISpotlightTokenF
         address tokenIpCollection_,
         address tokenImplementation_,
         address bondingCurve_,
-        address baseToken_,
         address storyDerivativeWorkflows_,
         address piperXRouter_,
         address piperXFactory_,
-        address protocolRewards_
-    ) external {
-        if (isInitialized()) {
-            revert("SpotlightTokenFactory: Already initialized");
-        }
-        _owner = owner_;
+        address rewardsVault_
+    ) external initializer {
+        __Ownable_init(owner_);
         _creationFee = creationFee_;
         _tokenIpCollection = tokenIpCollection_;
         _tokenImplementation = tokenImplementation_;
         _bondingCurve = bondingCurve_;
-        _baseToken = baseToken_;
         _storyDerivativeWorkflows = storyDerivativeWorkflows_;
-
-        _isInitialized = true;
         _piperXRouter = piperXRouter_;
         _piperXFactory = piperXFactory_;
-        _protocolRewards = protocolRewards_;
-    }
-
-    /**
-     * @dev See {ISpotlightTokenFactory-owner}.
-     */
-    function owner() public view needInitialized returns (address) {
-        return _owner;
-    }
-
-    /**
-     * @dev See {ISpotlightTokenFactory-tokenIpCollection}.
-     */
-    function tokenIpCollection() public view needInitialized returns (address) {
-        return _tokenIpCollection;
-    }
-
-    /**
-     * @dev See {ISpotlightTokenFactory-setTokenIpCollection}.
-     */
-    function setTokenIpCollection(address newTokenIpCollection) external needInitialized onlyOwner {
-        _tokenIpCollection = newTokenIpCollection;
-    }
-
-    /**
-     * @dev See {ISpotlightTokenFactory-tokenImplementation}.
-     */
-    function tokenImplementation() public view needInitialized returns (address) {
-        return _tokenImplementation;
-    }
-
-    /**
-     * @dev See {ISpotlightTokenFactory-setTokenImplementation}.
-     */
-    function setTokenImplementation(address newTokenImplementation) external needInitialized onlyOwner {
-        _tokenImplementation = newTokenImplementation;
+        _rewardsVault = rewardsVault_;
     }
 
     /**
      * @dev See {ISpotlightTokenFactory-creationFee}.
      */
-    function createTokenFee() public view needInitialized returns (uint256) {
+    function createTokenFee() public view returns (uint256) {
         return _creationFee;
     }
 
@@ -113,51 +67,72 @@ contract SpotlightTokenFactory is SpotlightTokenFactoryStorage, ISpotlightTokenF
     }
 
     /**
-     * @dev See {ISpotlightTokenFactory-storyDerivativeWorkflows}.
+     * @dev See {ISpotlightTokenFactory-tokenIpCollection}.
      */
-    function storyDerivativeWorkflows() public view needInitialized returns (address) {
-        return _storyDerivativeWorkflows;
+    function tokenIpCollection() public view returns (address) {
+        return _tokenIpCollection;
     }
 
     /**
-     * @dev See {ISpotlightTokenFactory-setStoryDerivativeWorkflows}.
+     * @dev See {ISpotlightTokenFactory-tokenImplementation}.
      */
-    function setStoryDerivativeWorkflows(address newStoryDerivativeWorkflows) external needInitialized onlyOwner {
-        _storyDerivativeWorkflows = newStoryDerivativeWorkflows;
+    function tokenImplementation() public view returns (address) {
+        return _tokenImplementation;
     }
 
     /**
-     * @dev See {ISpotlightTokenFactory-baseToken}.
+     * @dev See {ISpotlightTokenFactory-setTokenImplementation}.
      */
-    function baseToken() public view needInitialized returns (address) {
-        return _baseToken;
-    }
-
-    /**
-     * @dev See {ISpotlightTokenFactory-setBaseToken}.
-     */
-    function setBaseToken(address newBaseToken) external needInitialized onlyOwner {
-        _baseToken = newBaseToken;
+    function setTokenImplementation(address newTokenImplementation) external needInitialized onlyOwner {
+        _tokenImplementation = newTokenImplementation;
     }
 
     /**
      * @dev See {ISpotlightTokenFactory-bondingCurve}.
      */
-    function bondingCurve() public view needInitialized returns (address) {
+    function bondingCurve() public view returns (address) {
         return _bondingCurve;
     }
 
     /**
      * @dev See {ISpotlightTokenFactory-setBondingCurve}.
      */
-    function setBindingCurve(address newBondingCurve) external needInitialized onlyOwner {
+    function setBondingCurve(address newBondingCurve) external needInitialized onlyOwner {
         _bondingCurve = newBondingCurve;
+    }
+
+    /**
+     * @dev See {ISpotlightTokenFactory-storyDerivativeWorkflows}.
+     */
+    function storyDerivativeWorkflows() public view returns (address) {
+        return _storyDerivativeWorkflows;
+    }
+
+    /**
+     * @dev See {ISpotlightTokenFactory-piperXRouter}.
+     */
+    function piperXRouter() public view returns (address) {
+        return _piperXRouter;
+    }
+
+    /**
+     * @dev See {ISpotlightTokenFactory-piperXFactory}.
+     */
+    function piperXFactory() public view returns (address) {
+        return _piperXFactory;
+    }
+
+    /**
+     * @dev See {ISpotlightTokenFactory-rewardsVault}.
+     */
+    function rewardsVault() public view returns (address) {
+        return _rewardsVault;
     }
 
     /**
      * @dev See {ISpotlightTokenFactory-calculateTokenAddress}.
      */
-    function calculateTokenAddress(address tokenCreator) external view needInitialized returns (address) {
+    function calculateTokenAddress(address tokenCreator) external view returns (address) {
         bytes32 salt = _salt(tokenCreator);
         return Clones.predictDeterministicAddress(_tokenImplementation, salt, address(this));
     }
@@ -172,9 +147,9 @@ contract SpotlightTokenFactory is SpotlightTokenFactoryStorage, ISpotlightTokenF
         StoryWorkflowStructs.IPMetadata calldata ipMetadata,
         StoryWorkflowStructs.SignatureData calldata sigMetadata,
         StoryWorkflowStructs.SignatureData calldata sigRegister,
-        address specificAddress
+        address parentIPAccount
     ) external payable needInitialized returns (address tokenAddress, address ipId) {
-        tokenAddress = _deploySpotlightToken(tokenCreationData, msg.sender, specificAddress);
+        tokenAddress = _deploySpotlightToken(tokenCreationData, msg.sender, parentIPAccount);
 
         ISpotlightTokenIPCollection(_tokenIpCollection).mint(msg.sender, tokenCreationData.tokenIpNFTId);
 
@@ -201,16 +176,9 @@ contract SpotlightTokenFactory is SpotlightTokenFactoryStorage, ISpotlightTokenF
     }
 
     /**
-     * @dev See {ISpotlightTokenFactory-getInitialBuyTokenQuote}.
-     */
-    function getInitialBuyTokenQuote(uint256 tokensOut) external view needInitialized returns (uint256) {
-        return ISpotlightBondingCurve(_bondingCurve).getTargetTokenBuyQuote(0, tokensOut);
-    }
-
-    /**
      * @dev See {ISpotlightTokenFactory-numberOfTokensCreated}.
      */
-    function numberOfTokensCreated(address tokenCreator) public view needInitialized returns (uint256) {
+    function numberOfTokensCreated(address tokenCreator) public view returns (uint256) {
         return _numbersOfTokensCreated[tokenCreator];
     }
 
@@ -231,10 +199,6 @@ contract SpotlightTokenFactory is SpotlightTokenFactoryStorage, ISpotlightTokenF
         }
     }
 
-    function _checkIsOwner() internal view {
-        require(msg.sender == _owner, "SpotlightTokenFactory: Not owner");
-    }
-
     function _salt(address account) internal view returns (bytes32) {
         return keccak256(abi.encodePacked(account, numberOfTokensCreated(account)));
     }
@@ -251,7 +215,7 @@ contract SpotlightTokenFactory is SpotlightTokenFactoryStorage, ISpotlightTokenF
             _bondingCurve,
             address(this),
             ipAccount,
-            _protocolRewards,
+            _rewardsVault,
             _piperXRouter,
             _piperXFactory
         );

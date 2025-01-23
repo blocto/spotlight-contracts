@@ -60,7 +60,6 @@ contract SpotlightTokenTest is Test {
             address(_tokenIpCollection),
             address(spotlightTokenImpl),
             address(_bondingCurve),
-            WRAPPER_IP,
             address(_mockStoryWorkflows),
             PIPERX_V2_ROUTER,
             PIPERX_V2_FACTORY,

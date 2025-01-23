@@ -68,11 +68,10 @@ interface ISpotlightTokenFactory {
      * @param tokenIpCollection_ The address of the token IP collection contract.
      * @param tokenImplementation_ The address of the token implementation contract.
      * @param bondingCurve_ The address of the bonding curve contract.
-     * @param baseToken_ The address of the base token.
      * @param storyDerivativeWorkflows_ The address of the story derivative workflows contract.
      * @param piperXRouter_ The address of the PiperX router contract.
      * @param piperXFactory_ The address of the PiperX factory contract.
-     * @param protocolRewards_ The address of the protocol rewards contract.
+     * @param rewardsVault_ The address of the reward vault contract.
      */
     function initialize(
         address owner_,
@@ -80,39 +79,11 @@ interface ISpotlightTokenFactory {
         address tokenIpCollection_,
         address tokenImplementation_,
         address bondingCurve_,
-        address baseToken_,
         address storyDerivativeWorkflows_,
         address piperXRouter_,
         address piperXFactory_,
-        address protocolRewards_
+        address rewardsVault_
     ) external;
-
-    /**
-     * @dev Returns the address of the token factory owner.
-     */
-    function owner() external view returns (address);
-
-    /**
-     * @dev Returns the address of the token IP collection contract
-     * @notice The token IP collection contract must implement ISpotlightTokenIPCollection
-     */
-    function tokenIpCollection() external view returns (address);
-
-    /**
-     * @dev Sets the address of the token IP collection contract
-     * @notice The token IP collection contract must implement ISpotlightTokenIPCollection
-     */
-    function setTokenIpCollection(address newTokenIpCollection) external;
-
-    /**
-     * @dev Returns the address of the token implementation contract
-     */
-    function tokenImplementation() external view returns (address);
-
-    /**
-     * @dev Sets the address of the token implementation contract
-     */
-    function setTokenImplementation(address newTokenImplementation) external;
 
     /**
      * @dev Returns the fee amount required to create a token (in native token)
@@ -125,24 +96,20 @@ interface ISpotlightTokenFactory {
     function setCreateTokenFee(uint256 newFee) external;
 
     /**
-     * @dev Returns the address of the story derivative workflows contract
+     * @dev Returns the address of the token IP collection contract
+     * @notice The token IP collection contract must implement ISpotlightTokenIPCollection
      */
-    function storyDerivativeWorkflows() external view returns (address);
+    function tokenIpCollection() external view returns (address);
 
     /**
-     * @dev Sets the address of the story derivative workflows contract
+     * @dev Returns the address of the token implementation contract
      */
-    function setStoryDerivativeWorkflows(address newStoryDerivativeWorkflows) external;
+    function tokenImplementation() external view returns (address);
 
     /**
-     * @dev Returns the address of the base token
+     * @dev Sets the address of the token implementation contract
      */
-    function baseToken() external view returns (address);
-
-    /**
-     * @dev Sets the address of the base token
-     */
-    function setBaseToken(address newBaseToken) external;
+    function setTokenImplementation(address newTokenImplementation) external;
 
     /**
      * @dev Returns the address of the bonding curve contract
@@ -152,7 +119,27 @@ interface ISpotlightTokenFactory {
     /**
      * @dev Sets the address of the bonding curve contract
      */
-    function setBindingCurve(address newBondingCurve) external;
+    function setBondingCurve(address newBondingCurve) external;
+
+    /**
+     * @dev Returns the address of the story derivative workflows contract
+     */
+    function storyDerivativeWorkflows() external view returns (address);
+
+    /**
+     * @dev Returns the address of the PiperX router contract
+     */
+    function piperXRouter() external view returns (address);
+
+    /**
+     * @dev Returns the address of the PiperX factory contract
+     */
+    function piperXFactory() external view returns (address);
+
+    /**
+     * @dev Returns the address of the rewards vault contract
+     */
+    function rewardsVault() external view returns (address);
 
     /**
      * @dev Computes the address of a token created by the specified token creator.
@@ -170,7 +157,7 @@ interface ISpotlightTokenFactory {
      * @param ipMetadata Metadata for the intellectual property. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
      * @param sigMetadata Signature data for token creation. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
      * @param sigRegister Signature data for IP registration. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
-     * @param specificAddress The address of the specific address to be used for the token creation.
+     * @param parentIPAccount The address of the Parent IP account to be used for the token creation.
      *
      * @return tokenAddress The address of the newly created token.
      * @return ipId The ID of the newly registered intellectual property.
@@ -182,14 +169,8 @@ interface ISpotlightTokenFactory {
         StoryWorkflowStructs.IPMetadata calldata ipMetadata,
         StoryWorkflowStructs.SignatureData calldata sigMetadata,
         StoryWorkflowStructs.SignatureData calldata sigRegister,
-        address specificAddress
+        address parentIPAccount
     ) external payable returns (address tokenAddress, address ipId);
-
-    /**
-     * @dev Returns the quote for initial buying tokens
-     * @param tokensOut The number of tokens to be bought
-     */
-    function getInitialBuyTokenQuote(uint256 tokensOut) external view returns (uint256);
 
     /**
      * @dev Returns the number of tokens created by a token creator
