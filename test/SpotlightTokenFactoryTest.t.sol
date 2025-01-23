@@ -11,7 +11,7 @@ import {StoryWorkflowStructs} from "../src/spotlight-token-factory/story-workflo
 import {SpotlightNativeBondingCurve} from "../src/spotlight-bonding-curve/SpotlightNativeBondingCurve.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {SpotlightProtocolRewards} from "../src/spotlight-protocol-rewards/SpotlightProtocolRewards.sol";
+import {SpotlightRewardsVault} from "../src/spotlight-rewards-vault/SpotlightRewardsVault.sol";
 
 contract SpotlightTokenFactoryTest is Test {
     address private _factoryOwner;
@@ -24,7 +24,7 @@ contract SpotlightTokenFactoryTest is Test {
     SpotlightToken private _spotlightTokenImpl;
     SpotlightTokenIPCollection private _tokenIpCollection;
     SpotlightNativeBondingCurve private _bondingCurve;
-    SpotlightProtocolRewards private _rewardsVault;
+    SpotlightRewardsVault private _rewardsVault;
     address private constant _piperXRouter = address(0);
     address private constant _piperXFactory = address(0);
 
@@ -38,7 +38,7 @@ contract SpotlightTokenFactoryTest is Test {
         _factoryAddress = address(_factory);
         _tokenIpCollection = new SpotlightTokenIPCollection(_factoryAddress);
         _bondingCurve = new SpotlightNativeBondingCurve(1060848709, 4379701787);
-        _rewardsVault = new SpotlightProtocolRewards();
+        _rewardsVault = new SpotlightRewardsVault();
 
         _factory.initialize(
             _factoryOwner,

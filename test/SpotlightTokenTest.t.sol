@@ -14,7 +14,7 @@ import {StoryWorkflowStructs} from "../src/spotlight-token-factory/story-workflo
 import {SpotlightNativeBondingCurve} from "../src/spotlight-bonding-curve/SpotlightNativeBondingCurve.sol";
 import {IUniswapV2Router02} from "../src/interfaces/IUniswapV2Router02.sol";
 import {ISpotlightToken} from "../src/spotlight-token/ISpotlightToken.sol";
-import {SpotlightProtocolRewards} from "../src/spotlight-protocol-rewards/SpotlightProtocolRewards.sol";
+import {SpotlightRewardsVault} from "../src/spotlight-rewards-vault/SpotlightRewardsVault.sol";
 
 contract SpotlightTokenTest is Test {
     address private constant WRAPPER_IP = 0xe8CabF9d1FFB6CE23cF0a86641849543ec7BD7d5;
@@ -35,7 +35,7 @@ contract SpotlightTokenTest is Test {
     SpotlightToken private _token;
     SpotlightToken private _tokenCreatedWithIPAccount;
     MockStoryDerivativeWorkflows private _mockStoryWorkflows;
-    SpotlightProtocolRewards private _rewardsVault;
+    SpotlightRewardsVault private _rewardsVault;
 
     address private _factoryOwner;
     address private _tokenCreator;
@@ -51,7 +51,7 @@ contract SpotlightTokenTest is Test {
         _factory = new SpotlightTokenFactory();
         _tokenIpCollection = new SpotlightTokenIPCollection(address(_factory));
         _bondingCurve = new SpotlightNativeBondingCurve(690_000_000, 2_878_200_000);
-        _rewardsVault = new SpotlightProtocolRewards();
+        _rewardsVault = new SpotlightRewardsVault();
 
         _factory.initialize(
             _factoryOwner,

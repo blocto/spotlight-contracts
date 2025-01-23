@@ -7,11 +7,10 @@ import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/
 import {ISpotlightToken} from "./ISpotlightToken.sol";
 import {SpotlightTokenStorage} from "./SpotlightTokenStorage.sol";
 import {ISpotlightBondingCurve} from "../spotlight-bonding-curve/ISpotlightBondingCurve.sol";
-import {IWETH} from "../interfaces/IWETH.sol";
 import {IUniswapV2Router02} from "../interfaces/IUniswapV2Router02.sol";
 import {IUniswapV2Factory} from "../interfaces/IUniswapV2Factory.sol";
 import {MarketType, MarketState} from "./ISpotlightToken.sol";
-import {ISpotlightProtocolRewards} from "../spotlight-protocol-rewards/ISpotlightProtocolRewards.sol";
+import {ISpotlightRewardsVault} from "../spotlight-rewards-vault/ISpotlightRewardsVault.sol";
 
 contract SpotlightToken is ERC20Upgradeable, ReentrancyGuardTransient, SpotlightTokenStorage, ISpotlightToken {
     constructor() {
@@ -452,7 +451,7 @@ contract SpotlightToken is ERC20Upgradeable, ReentrancyGuardTransient, Spotlight
         (bool protocolSuccess,) = _protocolFeeRecipient.call{value: protocolFee}("");
         if (!protocolSuccess) revert IPTransferFailed();
 
-        ISpotlightProtocolRewards(_rewardsVault).deposit{value: ipAccountFee}(_ipAccount);
+        ISpotlightRewardsVault(_rewardsVault).deposit{value: ipAccountFee}(_ipAccount);
     }
 
     function _graduateMarket() internal {

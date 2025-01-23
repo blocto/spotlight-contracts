@@ -7,7 +7,7 @@ import {SpotlightTokenFactory} from "../src/spotlight-token-factory/SpotlightTok
 import {SpotlightTokenIPCollection} from "../src/spotlight-token-collection/SpotlightTokenIPCollection.sol";
 import {SpotlightNativeBondingCurve} from "../src/spotlight-bonding-curve/SpotlightNativeBondingCurve.sol";
 import {SpotlightToken} from "../src/spotlight-token/SpotlightToken.sol";
-import {SpotlightProtocolRewards} from "../src/spotlight-protocol-rewards/SpotlightProtocolRewards.sol";
+import {SpotlightRewardsVault} from "../src/spotlight-rewards-vault/SpotlightRewardsVault.sol";
 
 contract Deploy is Script {
     /**
@@ -65,7 +65,7 @@ contract Deploy is Script {
         SpotlightTokenFactory factoryImpl = new SpotlightTokenFactory();
 
         // @dev deploy spotlight protocol rewards contract
-        SpotlightProtocolRewards protocolRewards = new SpotlightProtocolRewards();
+        SpotlightRewardsVault rewardsVault = new SpotlightRewardsVault();
 
         // @dev deploy spotlight token factory proxy contract
         TransparentUpgradeableProxy factoryProxy =
@@ -79,7 +79,7 @@ contract Deploy is Script {
             _STORY_DERIVATIVE_WORKFLOWS_ADDRESS, // storyDerivativeWorkflows_
             PIPERX_V2_ROUTER, // piperxV2Router_
             PIPERX_V2_FACTORY, // piperxV2Factory_
-            address(protocolRewards) // protocolRewards_
+            address(rewardsVault) // rewardsVault_
         );
         tokenIpCollection.setTokenFactory(address(factoryProxy));
         vm.stopBroadcast();
