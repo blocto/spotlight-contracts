@@ -204,8 +204,7 @@ contract SpotlightTokenFactoryTest is Test {
         uint256 SHOULD_REFUND_EXCESS_IP = 1 ether;
         uint256 TOKEN_CREATOR_BALANCE = (DEFAULT_CREATION_FEE + INITIAL_BUY_AMOUNT + SHOULD_REFUND_EXCESS_IP);
 
-        uint256 expectedFactoryBalance = address(_factory).balance + DEFAULT_CREATION_FEE;
-        uint256 expectedFactoryOwnerBalance = INITIAL_BUY_AMOUNT * 1 / 100;
+        uint256 expectedFactoryBalance = address(_factory).balance + DEFAULT_CREATION_FEE + INITIAL_BUY_AMOUNT * 1 / 100;
         uint256 expectedTokenCreatorBalance = SHOULD_REFUND_EXCESS_IP;
         uint256 expectedPredeployedTokenBalance = INITIAL_BUY_AMOUNT * 99 / 100;
 
@@ -230,7 +229,6 @@ contract SpotlightTokenFactoryTest is Test {
 
         assertEq(address(_factory).balance, expectedFactoryBalance);
         assertEq(tokenCreator.balance, expectedTokenCreatorBalance);
-        assertEq(_factoryOwner.balance, expectedFactoryOwnerBalance);
         assertEq(predeployedTokenAddress.balance, expectedPredeployedTokenBalance);
         assertEq(_factory.numberOfTokensCreated(tokenCreator), 1);
     }
@@ -241,7 +239,6 @@ contract SpotlightTokenFactoryTest is Test {
         uint256 EXCESS_INITIAL_BUY_AMOUNT = 1 ether;
 
         uint256 expectedFactoryBalance = address(_factory).balance;
-        uint256 expectedFactoryOwnerBalance = 0;
         uint256 expectedPredeployedTokenBalance = 0;
 
         address tokenCreator = makeAddr("tokenCreator");
@@ -265,7 +262,6 @@ contract SpotlightTokenFactoryTest is Test {
         vm.stopPrank();
 
         assertEq(address(_factory).balance, expectedFactoryBalance);
-        assertEq(_factoryOwner.balance, expectedFactoryOwnerBalance);
         assertEq(predeployedTokenAddress.balance, expectedPredeployedTokenBalance);
     }
 

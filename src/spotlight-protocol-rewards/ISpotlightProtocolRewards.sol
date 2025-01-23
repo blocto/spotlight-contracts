@@ -40,37 +40,37 @@ interface ISpotlightProtocolRewards {
      * - The caller provides ETH value to deposit as rewards.
      * - Emits a Deposit event.
      *
-     * @param ipaId The IPA identifier address to deposit rewards for.
+     * @param ipAccount The IPAccount address to deposit rewards for.
      */
-    function deposit(address ipaId) external payable;
+    function deposit(address ipAccount) external payable;
 
     /**
      * @dev Withdraws rewards for a specific IPA.
-     * - Only the IPA owner can withdraw.
+     * - Only the IPAccount owner can withdraw.
      * - Requires withdraw functionality to be enabled.
      * - Emits a Withdraw event.
      *
-     * @param ipaId The IPA identifier address to withdraw rewards from.
+     * @param ipAccount The IPAccount address to withdraw rewards from.
      */
-    function withdraw(address ipaId) external;
+    function withdraw(address ipAccount) external;
 
     /**
      * @dev Withdraws rewards for multiple IPAs at once.
-     * - Only IPA owners can withdraw their respective rewards.
+     * - Only IPAccount owners can withdraw their respective rewards.
      * - Requires withdraw functionality to be enabled.
      * - Emits a Withdraw event with total amount.
      *
-     * @param ipaIds Array of IPA identifier addresses to withdraw rewards from.
+     * @param ipAccounts Array of IPAccount addresses to withdraw rewards from.
      */
-    function withdrawAll(address[] calldata ipaIds) external;
+    function withdrawAll(address[] calldata ipAccounts) external;
 
     /**
-     * @dev Returns the pending rewards for an IPA.
+     * @dev Returns the pending rewards for an IPAccount.
      *
-     * @param ipaId The IPA identifier address to check rewards for.
+     * @param ipAccount The IPAccount address to check rewards for.
      * @return The amount of pending rewards.
      */
-    function rewardsOf(address ipaId) external view returns (uint256);
+    function rewardsOf(address ipAccount) external view returns (uint256);
 
     /**
      * @dev Returns the total rewards held in the contract.

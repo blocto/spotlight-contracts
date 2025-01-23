@@ -145,7 +145,7 @@ contract SpotlightProtocolRewardsTest is Test {
         address[] memory ipaIds = new address[](0);
 
         vm.startPrank(_user);
-        vm.expectRevert(SpotlightProtocolRewards.IpaIdsEmpty.selector);
+        vm.expectRevert(SpotlightProtocolRewards.IPAccountsEmpty.selector);
         _protocolRewards.withdrawAll(ipaIds);
         vm.stopPrank();
     }
