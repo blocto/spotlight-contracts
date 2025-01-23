@@ -3,16 +3,20 @@ pragma solidity ^0.8.13;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ISpotlightTokenIPCollection} from "./ISpotlightTokenIPCollection.sol";
 
 contract SpotlightTokenIPCollection is Ownable, ERC721, ISpotlightTokenIPCollection {
+    using Strings for uint256;
+
     uint256 private _totalSupply;
     bool private _isTransferEnabled = false;
     bool private _isMintEnabled = false;
     address private _tokenFactory;
-    string private _tokenURI = "ipfs://bafkreibqge4t7rsppnarffvrzlfph5rk5ajvupa4oyk4v2h3ieqccty4ye";
+    string private _defaultTokenURI = "ipfs://bafkreibqge4t7rsppnarffvrzlfph5rk5ajvupa4oyk4v2h3ieqccty4ye";
+    string public __baseURI;
 
-    constructor(address tokenFactory_) Ownable(msg.sender) ERC721("Spotlight Meme IP", "Spotlight Meme IP") {
+    constructor(address tokenFactory_) Ownable(msg.sender) ERC721("Spotlight Token IP", "SPTIP") {
         _tokenFactory = tokenFactory_;
     }
 
@@ -34,11 +38,19 @@ contract SpotlightTokenIPCollection is Ownable, ERC721, ISpotlightTokenIPCollect
     }
 
     /**
-     * @dev See {ISpotlightTokenCollection-setTokenURI}.
+     * @dev See {ISpotlightTokenCollection-setBaseURI}.
      * @notice onlyOwner
      */
-    function setTokenURI(string memory tokenURI_) public onlyOwner {
-        _tokenURI = tokenURI_;
+    function setBaseURI(string memory baseURI_) public onlyOwner {
+        __baseURI = baseURI_;
+    }
+
+    /**
+     * @dev See {ISpotlightTokenCollection-setDefaultTokenURI}.
+     * @notice onlyOwner
+     */
+    function setDefaultTokenURI(string memory defaultTokenURI_) public onlyOwner {
+        _defaultTokenURI = defaultTokenURI_;
     }
 
     /**
@@ -107,18 +119,21 @@ contract SpotlightTokenIPCollection is Ownable, ERC721, ISpotlightTokenIPCollect
     }
 
     /**
-     * @dev See {ERC721-_baseURI}.
-     */
-    function _baseURI() internal view override returns (string memory) {
-        return _tokenURI;
-    }
-
-    /**
      * @dev See {ERC721-tokenURI}.
      */
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         _requireOwned(tokenId);
-        return _tokenURI;
+
+        return bytes(_baseURI()).length > 0 ? string.concat(_baseURI(), tokenId.toString()) : _defaultTokenURI;
+    }
+
+    /**
+     * @dev Base URI for computing {tokenURI}. If set, the resulting URI for each
+     * token will be the concatenation of the `baseURI` and the `tokenId`. Empty
+     * by default, can be overridden in child contracts.
+     */
+    function _baseURI() internal view override returns (string memory) {
+        return __baseURI;
     }
 
     /**

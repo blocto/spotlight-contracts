@@ -11,9 +11,14 @@ interface ISpotlightTokenIPCollection {
     function totalSupply() external view returns (uint256);
 
     /**
-     * @dev Sets the token URI for the collection.
+     * @dev Sets the base URI for the collection.
      */
-    function setTokenURI(string memory tokenURI_) external;
+    function setBaseURI(string memory baseURI_) external;
+
+    /**
+     * @dev Sets the default token URI for the collection.
+     */
+    function setDefaultTokenURI(string memory defaultTokenURI_) external;
 
     /**
      * @dev Returns wether minting is enabled.

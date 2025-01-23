@@ -11,7 +11,7 @@ contract SpotlightTokenIPCollectionTest is Test {
     SpotlightTokenIPCollection private _tokenIpCollection;
     address private _tokenIpCollectionAddr;
 
-    string private originalTokenURI = "ipfs://bafkreibqge4t7rsppnarffvrzlfph5rk5ajvupa4oyk4v2h3ieqccty4ye";
+    string private defaultTokenURI = "ipfs://bafkreibqge4t7rsppnarffvrzlfph5rk5ajvupa4oyk4v2h3ieqccty4ye";
     string private newTokenURI = "https://example.com/new-token/";
 
     function setUp() public {
@@ -30,8 +30,8 @@ contract SpotlightTokenIPCollectionTest is Test {
         assertEq(_tokenIpCollection.totalSupply(), 0);
         assertEq(_tokenIpCollection.isMintEnabled(), false);
         assertEq(_tokenIpCollection.isTransferEnabled(), false);
-        assertEq(_tokenIpCollection.name(), "Spotlight Meme IP");
-        assertEq(_tokenIpCollection.symbol(), "Spotlight Meme IP");
+        assertEq(_tokenIpCollection.name(), "Spotlight Token IP");
+        assertEq(_tokenIpCollection.symbol(), "SPTIP");
     }
 
     function testNotOwnerSetMintEnabled() public {
@@ -80,11 +80,11 @@ contract SpotlightTokenIPCollectionTest is Test {
         assertEq(_tokenIpCollection.tokenFactory(), newTokenFactory);
     }
 
-    function testNotOwnerSetTokenURI() public {
+    function testNotOwnerSetDefaultTokenURI() public {
         address notOwner = makeAddr("notOwner");
         vm.startPrank(notOwner);
         vm.expectRevert();
-        _tokenIpCollection.setTokenURI(newTokenURI);
+        _tokenIpCollection.setDefaultTokenURI(newTokenURI);
         vm.stopPrank();
     }
 
@@ -108,7 +108,7 @@ contract SpotlightTokenIPCollectionTest is Test {
 
         assertEq(_tokenIpCollection.totalSupply(), totalSupplyBefore + 1);
         assertEq(_tokenIpCollection.ownerOf(tokenId), receiver);
-        assertEq(_tokenIpCollection.tokenURI(tokenId), originalTokenURI);
+        assertEq(_tokenIpCollection.tokenURI(tokenId), defaultTokenURI);
     }
 
     function testTokenFactoryMint() public {
@@ -120,7 +120,7 @@ contract SpotlightTokenIPCollectionTest is Test {
 
         assertEq(_tokenIpCollection.totalSupply(), totalSupplyBefore + 1);
         assertEq(_tokenIpCollection.ownerOf(tokenId), receiver);
-        assertEq(_tokenIpCollection.tokenURI(tokenId), originalTokenURI);
+        assertEq(_tokenIpCollection.tokenURI(tokenId), defaultTokenURI);
     }
 
     function testOwnerMint() public {
@@ -132,7 +132,7 @@ contract SpotlightTokenIPCollectionTest is Test {
 
         assertEq(_tokenIpCollection.totalSupply(), totalSupplyBefore + 1);
         assertEq(_tokenIpCollection.ownerOf(tokenId), receiver);
-        assertEq(_tokenIpCollection.tokenURI(tokenId), originalTokenURI);
+        assertEq(_tokenIpCollection.tokenURI(tokenId), defaultTokenURI);
     }
 
     function testMintWithExistingTokenId() public {
@@ -148,16 +148,36 @@ contract SpotlightTokenIPCollectionTest is Test {
         vm.stopPrank();
     }
 
-    function testSetTokenURI() public {
+    function testSetDefaultTokenURI() public {
         address receiver = makeAddr("receiver");
         uint256 tokenId = 0;
         _mint(_owner, receiver, tokenId);
 
         vm.startPrank(_owner);
-        _tokenIpCollection.setTokenURI(newTokenURI);
+        _tokenIpCollection.setDefaultTokenURI(newTokenURI);
         vm.stopPrank();
 
         assertEq(_tokenIpCollection.tokenURI(tokenId), newTokenURI);
+    }
+
+    function testNotOwnerSetBaseTokenURI() public {
+        address notOwner = makeAddr("notOwner");
+        vm.startPrank(notOwner);
+        vm.expectRevert();
+        _tokenIpCollection.setBaseURI(newTokenURI);
+        vm.stopPrank();
+    }
+
+    function testSetBaseURI() public {
+        address receiver = makeAddr("receiver");
+        uint256 tokenId = 0;
+        _mint(_owner, receiver, tokenId);
+
+        vm.startPrank(_owner);
+        _tokenIpCollection.setBaseURI(newTokenURI);
+        vm.stopPrank();
+
+        assertEq(_tokenIpCollection.tokenURI(tokenId), "https://example.com/new-token/0");
     }
 
     function testUserTransferFromBeforeEnabled() public {
