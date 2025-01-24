@@ -22,7 +22,7 @@ contract SpotlightIPCollectionTest is Test {
         vm.startPrank(_ownerAddr);
         _spotlightIPCollection = new SpotlightIPCollection();
         _spotlightIPCollectionAddr = address(_spotlightIPCollection);
-        _spotlightIPCollection.setTokenURI(originalTokenURI);
+        _spotlightIPCollection.setDefaultTokenURI(originalTokenURI);
         vm.stopPrank();
     }
 
@@ -112,23 +112,42 @@ contract SpotlightIPCollectionTest is Test {
         assert(!_spotlightIPCollection.isTransferEnabled());
     }
 
-    function test_notOwnerSetTokenURI() public {
+    function test_notOwnerSetDefaultTokenURI() public {
         address notOwner = makeAddr("notOwner");
         vm.startPrank(notOwner);
         vm.expectRevert();
-        _spotlightIPCollection.setTokenURI(newTokenURI);
+        _spotlightIPCollection.setDefaultTokenURI(newTokenURI);
         vm.stopPrank();
     }
 
-    function test_setTokenURI() public {
+    function test_setDefaultTokenURI() public {
         address receiver = makeAddr("receiver");
         uint256 tokenId = _mint(receiver);
 
         vm.startPrank(_ownerAddr);
-        _spotlightIPCollection.setTokenURI(newTokenURI);
+        _spotlightIPCollection.setDefaultTokenURI(newTokenURI);
         vm.stopPrank();
 
         assertEq(_spotlightIPCollection.tokenURI(tokenId), newTokenURI);
+    }
+
+    function test_notOwnerSetBaseURI() public {
+        address notOwner = makeAddr("notOwner");
+        vm.startPrank(notOwner);
+        vm.expectRevert();
+        _spotlightIPCollection.setBaseURI(newTokenURI);
+        vm.stopPrank();
+    }
+
+    function test_setBaseURI() public {
+        address receiver = makeAddr("receiver");
+        _mint(receiver);
+
+        vm.startPrank(_ownerAddr);
+        _spotlightIPCollection.setBaseURI(newTokenURI);
+        vm.stopPrank();
+
+        assertEq(_spotlightIPCollection.tokenURI(0), "https://example.com/new-token/0");
     }
 
     function test_transferFromBeforeEnabled() public {

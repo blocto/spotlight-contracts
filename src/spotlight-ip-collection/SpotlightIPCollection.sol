@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.13;
 
-import {ERC721} from "../../lib/openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
-import {Ownable} from "../../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
+import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract SpotlightIPCollection is ERC721, Ownable {
+    using Strings for uint256;
+
     bool private _isTransferEnabled = false;
     bool private _isMintEnabled = false;
 
     uint256 private _nextTokenId;
-    string private _tokenURI;
+    string private _defaultTokenURI;
+    string public __baseURI;
 
     modifier onlyTransferEnabled() {
         _checkTransferEnabled();
@@ -28,16 +32,20 @@ contract SpotlightIPCollection is ERC721, Ownable {
     }
 
     function _baseURI() internal view override returns (string memory) {
-        return _tokenURI;
+        return __baseURI;
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         _requireOwned(tokenId);
-        return _tokenURI;
+        return bytes(_baseURI()).length > 0 ? string.concat(_baseURI(), tokenId.toString()) : _defaultTokenURI;
     }
 
-    function setTokenURI(string memory tokenURI_) public onlyOwner {
-        _tokenURI = tokenURI_;
+    function setBaseURI(string memory baseURI_) public onlyOwner {
+        __baseURI = baseURI_;
+    }
+
+    function setDefaultTokenURI(string memory defaultTokenURI_) public onlyOwner {
+        _defaultTokenURI = defaultTokenURI_;
     }
 
     function isMintEnabled() public view returns (bool) {
