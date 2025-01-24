@@ -5,6 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {IMinimalIPAccount} from "../spotlight-protocol-rewards/IMinimalIPAccount.sol";
 import {ISpotlightTokenFactory} from "./ISpotlightTokenFactory.sol";
 import {ISpotlightToken} from "../spotlight-token/ISpotlightToken.sol";
 import {ISpotlightTokenIPCollection} from "../spotlight-token-collection/ISpotlightTokenIPCollection.sol";
@@ -149,11 +150,9 @@ contract SpotlightTokenFactory is OwnableUpgradeable, SpotlightTokenFactoryStora
         StoryWorkflowStructs.SignatureData calldata sigRegister
     ) external payable needInitialized returns (address tokenAddress, address ipId) {
         require(derivData.parentIpIds.length > 0, "SpotlightTokenFactory: Parent IP ID is required");
-        tokenAddress = _deploySpotlightToken(
-            tokenCreationData,
-            msg.sender,
-            derivData.parentIpIds[0] // get first parent IPAccount only
-        );
+        address parentIPAccount = derivData.parentIpIds[0];
+        require(_checkIsValidIPAccount(parentIPAccount), "SpotlightTokenFactory: Parent IP Account is not valid");
+        tokenAddress = _deploySpotlightToken(tokenCreationData, msg.sender, parentIPAccount);
 
         ISpotlightTokenIPCollection(_tokenIpCollection).mint(msg.sender, tokenCreationData.tokenIpNFTId);
 
@@ -254,5 +253,10 @@ contract SpotlightTokenFactory is OwnableUpgradeable, SpotlightTokenFactoryStora
 
         (bool success,) = tokenCreator.call{value: excess}("");
         require(success, "SpotlightTokenFactory: Failed to return excess fee");
+    }
+
+    function _checkIsValidIPAccount(address ipAccount) internal view returns (bool) {
+        (, address tokenContract,) = IMinimalIPAccount(ipAccount).token();
+        return tokenContract != address(0);
     }
 }
