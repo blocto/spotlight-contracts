@@ -10,6 +10,7 @@ import "../../lib/forge-std/src/Test.sol";
 contract MockStoryDerivativeWorkflows is IStoryDerivativeWorkflows, Test {
     address public mockReturnAddress;
     uint256 public callCount;
+    address public mockParentIPAccount;
 
     StoryWorkflowStructs.MakeDerivative public mockMakeDerivative;
     StoryWorkflowStructs.IPMetadata public mockIpMetadata;
@@ -26,8 +27,12 @@ contract MockStoryDerivativeWorkflows is IStoryDerivativeWorkflows, Test {
     );
 
     constructor() {
+        mockParentIPAccount = address(0x359EcA9F3C4cCdB7C10Dd4D9410EaD52Ef9B430A);
+        address[] memory parentIPAccounts = new address[](1);
+        parentIPAccounts[0] = mockParentIPAccount;
+
         mockMakeDerivative = StoryWorkflowStructs.MakeDerivative({
-            parentIpIds: new address[](0),
+            parentIpIds: parentIPAccounts,
             licenseTemplate: address(0),
             licenseTermsIds: new uint256[](0),
             royaltyContext: ""
