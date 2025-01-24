@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.13;
+
 import "../lib/forge-std/src/Test.sol";
 import {SpotlightIPCollection} from "../src/spotlight-ip-collection/SpotlightIPCollection.sol";
 
@@ -76,7 +77,7 @@ contract SpotlightIPCollectionTest is Test {
     }
 
     function test_mint() public {
-        uint originalTotalSupply = _spotlightIPCollection.totalSupply();
+        uint256 originalTotalSupply = _spotlightIPCollection.totalSupply();
         address receiver = makeAddr("receiver");
 
         uint256 tokenId = _mint(receiver);
@@ -87,7 +88,7 @@ contract SpotlightIPCollectionTest is Test {
     }
 
     function test_mintTo() public {
-        uint originalTotalSupply = _spotlightIPCollection.totalSupply();
+        uint256 originalTotalSupply = _spotlightIPCollection.totalSupply();
         address receiver = makeAddr("receiver");
 
         uint256 tokenId = _mintTo(receiver);
