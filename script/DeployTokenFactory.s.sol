@@ -82,7 +82,6 @@ contract Deploy is Script {
             address(protocolRewards) // protocolRewards_
         );
         tokenIpCollection.setTokenFactory(address(factoryProxy));
-        tokenIpCollection.setMintEnabled(true);
         vm.stopBroadcast();
     }
 }
