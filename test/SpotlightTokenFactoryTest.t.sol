@@ -202,7 +202,7 @@ contract SpotlightTokenFactoryTest is Test {
             address(_bondingCurve)
         );
         _factory.createToken{value: tokenCreator.balance}(
-            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister, address(0)
+            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister
         );
         vm.stopPrank();
 
@@ -216,7 +216,10 @@ contract SpotlightTokenFactoryTest is Test {
         uint256 SHOULD_REFUND_EXCESS_IP = 1 ether;
         uint256 TOKEN_CREATOR_BALANCE = (DEFAULT_CREATION_FEE + INITIAL_BUY_AMOUNT + SHOULD_REFUND_EXCESS_IP);
 
-        uint256 expectedFactoryBalance = address(_factory).balance + DEFAULT_CREATION_FEE + INITIAL_BUY_AMOUNT * 1 / 100;
+        uint256 protocolTradingFee = INITIAL_BUY_AMOUNT / 100;
+        uint256 ipAccountFee = protocolTradingFee / 10;
+        uint256 expectedFactoryBalance =
+            address(_factory).balance + DEFAULT_CREATION_FEE + (protocolTradingFee - ipAccountFee);
         uint256 expectedTokenCreatorBalance = SHOULD_REFUND_EXCESS_IP;
         uint256 expectedPredeployedTokenBalance = INITIAL_BUY_AMOUNT * 99 / 100;
 
@@ -235,7 +238,7 @@ contract SpotlightTokenFactoryTest is Test {
         ) = _getDummyStructs(tokenCreator, 1 ether);
 
         _factory.createToken{value: TOKEN_CREATOR_BALANCE}(
-            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister, address(0)
+            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister
         );
         vm.stopPrank();
 
@@ -269,7 +272,7 @@ contract SpotlightTokenFactoryTest is Test {
 
         vm.expectRevert("SpotlightTokenFactory: Insufficient total amount");
         _factory.createToken{value: TOKEN_CREATOR_BALANCE}(
-            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister, address(0)
+            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister
         );
         vm.stopPrank();
 

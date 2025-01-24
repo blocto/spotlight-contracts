@@ -28,7 +28,6 @@ contract SpotlightTokenTest is Test {
     uint256 public constant MAX_TOTAL_SUPPLY = 1_000_000_000e18; // 1 billion
     uint256 public constant GRADUATE_MARKET_AMOUNT = 3 ether;
     uint256 public constant IP_ACCOUNT_FEE_BPS = 1_000; // 10%
-    address constant IP_ACCOUNT = 0x359EcA9F3C4cCdB7C10Dd4D9410EaD52Ef9B430A;
 
     SpotlightTokenFactory private _factory;
     SpotlightTokenIPCollection private _tokenIpCollection;
@@ -89,7 +88,7 @@ contract SpotlightTokenTest is Test {
         });
 
         (_tokenAddress,) = _factory.createToken{value: DEFAULT_CREATION_FEE}(
-            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister, address(0)
+            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister
         );
         _token = SpotlightToken(payable(_tokenAddress));
 
@@ -104,13 +103,7 @@ contract SpotlightTokenTest is Test {
 
         address tokenCreatedWithIPAccount;
         (tokenCreatedWithIPAccount,) = _factory.createToken{value: DEFAULT_CREATION_FEE}(
-            tokenCreationDataWithIPAccount,
-            initialBuyData,
-            makeDerivative,
-            ipMetadata,
-            sigMetadata,
-            sigRegister,
-            IP_ACCOUNT
+            tokenCreationDataWithIPAccount, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister
         );
         _tokenCreatedWithIPAccount = SpotlightToken(payable(tokenCreatedWithIPAccount));
         vm.stopPrank();
@@ -141,7 +134,7 @@ contract SpotlightTokenTest is Test {
             _tokenCreator,
             address(_bondingCurve),
             address(_factory),
-            address(IP_ACCOUNT),
+            address(0x359EcA9F3C4cCdB7C10Dd4D9410EaD52Ef9B430A),
             address(_rewardsVault),
             address(PIPERX_V2_ROUTER),
             address(PIPERX_V2_FACTORY)
@@ -164,9 +157,11 @@ contract SpotlightTokenTest is Test {
         uint256 PROTOCOL_TRADING_FEE = _calculateFee(USER_BUY_AMOUNT, TOTAL_FEE_BPS);
         uint256 TOKEN_CONTRACT_BALANCE_BEFORE = address(_token).balance;
         uint256 FACTORY_BALANCE_BEFORE = address(_factory).balance;
+        uint256 protocolTradingFeeForFactory =
+            PROTOCOL_TRADING_FEE - _calculateFee(PROTOCOL_TRADING_FEE, IP_ACCOUNT_FEE_BPS);
         uint256 expectedTokenReceived = _token.getIPBuyQuoteWithFee(USER_BUY_AMOUNT);
         uint256 expectedContractIPBalance = TOKEN_CONTRACT_BALANCE_BEFORE + USER_BUY_AMOUNT - PROTOCOL_TRADING_FEE;
-        uint256 expectedFactoryBalance = FACTORY_BALANCE_BEFORE + PROTOCOL_TRADING_FEE;
+        uint256 expectedFactoryBalance = FACTORY_BALANCE_BEFORE + protocolTradingFeeForFactory;
 
         vm.deal(_buyer, USER_BUY_AMOUNT);
         vm.startPrank(_buyer);
@@ -298,9 +293,11 @@ contract SpotlightTokenTest is Test {
         uint256 FACTORY_BALANCE_BEFORE = address(_factory).balance;
         uint256 ipIn = _token.getTokenBuyQuote(USER_BUY_TOKEN_AMOUNT);
         uint256 protocolTradingFee = _calculateFee(ipIn, TOTAL_FEE_BPS);
+        uint256 protocolTradingFeeForFactory =
+            protocolTradingFee - _calculateFee(protocolTradingFee, IP_ACCOUNT_FEE_BPS);
         uint256 ipInWithFee = ipIn + protocolTradingFee;
         uint256 expectedContractIPBalance = TOKEN_CONTRACT_BALANCE_BEFORE + ipIn;
-        uint256 expectedFactoryBalance = FACTORY_BALANCE_BEFORE + protocolTradingFee;
+        uint256 expectedFactoryBalance = FACTORY_BALANCE_BEFORE + protocolTradingFeeForFactory;
 
         vm.deal(_buyer, ipInWithFee);
         vm.startPrank(_buyer);
