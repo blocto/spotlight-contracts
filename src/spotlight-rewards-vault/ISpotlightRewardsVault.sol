@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.13;
 
-interface ISpotlightProtocolRewards {
+interface ISpotlightRewardsVault {
     /**
      * @dev Struct to hold withdrawal information
      */
@@ -45,7 +45,7 @@ interface ISpotlightProtocolRewards {
     function deposit(address ipAccount) external payable;
 
     /**
-     * @dev Withdraws rewards for a specific IPA.
+     * @dev Withdraws rewards for a IPAccount.
      * - Only the IPAccount owner can withdraw.
      * - Requires withdraw functionality to be enabled.
      * - Emits a Withdraw event.

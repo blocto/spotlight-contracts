@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.13;
 
-import {ISpotlightProtocolRewards} from "./ISpotlightProtocolRewards.sol";
+import {ISpotlightRewardsVault} from "./ISpotlightRewardsVault.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {IMinimalIPAccount} from "./IMinimalIPAccount.sol";
+import {IMinimalIPAccount} from "../interfaces/IMinimalIPAccount.sol";
 
 /*
  * @dev Manager of deposits & withdrawals for protocol rewards
  */
-contract SpotlightProtocolRewards is ISpotlightProtocolRewards, Ownable {
+contract SpotlightRewardsVault is ISpotlightRewardsVault, Ownable {
     constructor() payable Ownable(msg.sender) {}
 
     mapping(address => mapping(uint256 => uint256)) internal _rewards;

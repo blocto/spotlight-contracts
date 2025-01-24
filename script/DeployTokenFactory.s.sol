@@ -7,7 +7,7 @@ import {SpotlightTokenFactory} from "../src/spotlight-token-factory/SpotlightTok
 import {SpotlightTokenIPCollection} from "../src/spotlight-token-collection/SpotlightTokenIPCollection.sol";
 import {SpotlightNativeBondingCurve} from "../src/spotlight-bonding-curve/SpotlightNativeBondingCurve.sol";
 import {SpotlightToken} from "../src/spotlight-token/SpotlightToken.sol";
-import {SpotlightProtocolRewards} from "../src/spotlight-protocol-rewards/SpotlightProtocolRewards.sol";
+import {SpotlightRewardsVault} from "../src/spotlight-rewards-vault/SpotlightRewardsVault.sol";
 
 contract Deploy is Script {
     /**
@@ -39,7 +39,7 @@ contract Deploy is Script {
     */
 
     address private _STORY_DERIVATIVE_WORKFLOWS_ADDRESS = 0xa8815CEB96857FFb8f5F8ce920b1Ae6D70254C7B;
-    address private _SPOTLIGHT_TOKEN_FACTORY_OWNER = 0x582d6944a8EA7e4ACD385D18DC95CF5915510289;
+    address private _SPOTLIGHT_TOKEN_FACTORY_OWNER = 0x0FbAd0dd681679112F8D1635d2C07C93dBd294B1;
 
     address private constant PIPERX_V2_ROUTER = 0x8812d810EA7CC4e1c3FB45cef19D6a7ECBf2D85D;
     address private constant PIPERX_V2_FACTORY = 0x700722D24f9256Be288f56449E8AB1D27C4a70ca;
@@ -65,7 +65,7 @@ contract Deploy is Script {
         SpotlightTokenFactory factoryImpl = new SpotlightTokenFactory();
 
         // @dev deploy spotlight protocol rewards contract
-        SpotlightProtocolRewards protocolRewards = new SpotlightProtocolRewards();
+        SpotlightRewardsVault rewardsVault = new SpotlightRewardsVault();
 
         // @dev deploy spotlight token factory proxy contract
         TransparentUpgradeableProxy factoryProxy =
@@ -79,7 +79,7 @@ contract Deploy is Script {
             _STORY_DERIVATIVE_WORKFLOWS_ADDRESS, // storyDerivativeWorkflows_
             PIPERX_V2_ROUTER, // piperxV2Router_
             PIPERX_V2_FACTORY, // piperxV2Factory_
-            address(protocolRewards) // protocolRewards_
+            address(rewardsVault) // rewardsVault_
         );
         tokenIpCollection.setTokenFactory(address(factoryProxy));
         vm.stopBroadcast();
