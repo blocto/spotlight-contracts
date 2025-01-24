@@ -157,7 +157,6 @@ interface ISpotlightTokenFactory {
      * @param ipMetadata Metadata for the intellectual property. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
      * @param sigMetadata Signature data for token creation. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
      * @param sigRegister Signature data for IP registration. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
-     * @param parentIPAccount The address of the Parent IP account to be used for the token creation.
      *
      * @return tokenAddress The address of the newly created token.
      * @return ipId The ID of the newly registered intellectual property.
@@ -168,8 +167,7 @@ interface ISpotlightTokenFactory {
         StoryWorkflowStructs.MakeDerivative calldata derivData,
         StoryWorkflowStructs.IPMetadata calldata ipMetadata,
         StoryWorkflowStructs.SignatureData calldata sigMetadata,
-        StoryWorkflowStructs.SignatureData calldata sigRegister,
-        address parentIPAccount
+        StoryWorkflowStructs.SignatureData calldata sigRegister
     ) external payable returns (address tokenAddress, address ipId);
 
     /**

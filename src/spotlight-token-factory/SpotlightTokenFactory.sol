@@ -146,10 +146,14 @@ contract SpotlightTokenFactory is OwnableUpgradeable, SpotlightTokenFactoryStora
         StoryWorkflowStructs.MakeDerivative calldata derivData,
         StoryWorkflowStructs.IPMetadata calldata ipMetadata,
         StoryWorkflowStructs.SignatureData calldata sigMetadata,
-        StoryWorkflowStructs.SignatureData calldata sigRegister,
-        address parentIPAccount
+        StoryWorkflowStructs.SignatureData calldata sigRegister
     ) external payable needInitialized returns (address tokenAddress, address ipId) {
-        tokenAddress = _deploySpotlightToken(tokenCreationData, msg.sender, parentIPAccount);
+        require(derivData.parentIpIds.length > 0, "SpotlightTokenFactory: Parent IP ID is required");
+        tokenAddress = _deploySpotlightToken(
+            tokenCreationData,
+            msg.sender,
+            derivData.parentIpIds[0] // get first parent IPAccount only
+        );
 
         ISpotlightTokenIPCollection(_tokenIpCollection).mint(msg.sender, tokenCreationData.tokenIpNFTId);
 
