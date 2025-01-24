@@ -1,19 +1,16 @@
-## Foundry
+## Spotlight Contracts
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+[![Actions Status](https://github.com/blocto/spotlight-contracts/workflows/CI/badge.svg)](https://github.com/blocto/spotlight-contracts/actions)
 
-Foundry consists of:
+**Your Gateway to Establishing, Promoting, Connecting, and Monetizing IPs**
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+Spotlight is a platform offering powerful tools to help users build, promote, connect, and monetize their intellectual properties (IPs). Whether you’re an artist, creator, or entrepreneur, Spotlight provides everything you need to easily manage, grow, and unlock the value of your IP.
 
 ## Documentation
 
-https://book.getfoundry.sh/
+In-depth documentation on Spotlight Protocol is available at https://spotlight-protocol.gitbook.io/spotlight-protocol
 
-## Usage
+## Development
 
 ### Build
 
@@ -33,34 +30,34 @@ $ forge test
 $ forge fmt
 ```
 
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
 ### Deploy
 
+- Deploy IPCollection contract
 ```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+$ forge script script/DeployIPCollection.s.sol:Deploy --broadcast \
+    --chain-id 1516 \
+    --rpc-url https://odyssey.storyrpc.io \
+    --verify \
+    --verifier blockscout \
+    --verifier-url 'https://odyssey.storyscan.xyz/api/' 
 ```
 
-### Cast
-
+- Deploy IPRootCollection contract and mint the root ip
 ```shell
-$ cast <subcommand>
+$ forge script script/DeployIPRootCollectionAndMint.s.sol:Deploy --broadcast \
+    --chain-id 1516 \
+    --rpc-url https://odyssey.storyrpc.io \
+    --verify \
+    --verifier blockscout \
+    --verifier-url 'https://odyssey.storyscan.xyz/api/' 
 ```
 
-### Help
-
+- Deploy TokenFactory contract
 ```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+forge script script/DeployTokenFactory.s.sol:Deploy  --broadcast \
+    --chain-id 1516 \
+    --rpc-url https://odyssey.storyrpc.io \
+    --verify \
+    --verifier blockscout \
+    --verifier-url 'https://odyssey.storyscan.xyz/api/' 
 ```
