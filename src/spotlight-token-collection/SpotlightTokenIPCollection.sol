@@ -13,7 +13,7 @@ contract SpotlightTokenIPCollection is Ownable, ERC721, ISpotlightTokenIPCollect
     bool private _isTransferEnabled = false;
     bool private _isMintEnabled = false;
     address private _tokenFactory;
-    string private _defaultTokenURI = "ipfs://bafkreibqge4t7rsppnarffvrzlfph5rk5ajvupa4oyk4v2h3ieqccty4ye";
+    string private _defaultTokenURI = "ipfs://bafkreifl7ifonbfll7nn423tm5s7lvcw7jc6qgimcc2izef4foo47srt2e";
     string public __baseURI;
 
     constructor(address tokenFactory_) Ownable(msg.sender) ERC721("Spotlight Token IP", "SPTIP") {
