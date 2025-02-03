@@ -32,32 +32,32 @@ $ forge fmt
 
 ### Deploy
 
-- Deploy IPCollection contract
-```shell
-$ forge script script/DeployIPCollection.s.sol:Deploy --broadcast \
-    --chain-id 1516 \
-    --rpc-url https://odyssey.storyrpc.io \
-    --verify \
-    --verifier blockscout \
-    --verifier-url 'https://odyssey.storyscan.xyz/api/' 
-```
-
 - Deploy IPRootCollection contract and mint the root ip
 ```shell
 $ forge script script/DeployIPRootCollectionAndMint.s.sol:Deploy --broadcast \
-    --chain-id 1516 \
-    --rpc-url https://odyssey.storyrpc.io \
+    --chain-id 1315 \
+    --rpc-url https://aeneid.storyrpc.io \
     --verify \
     --verifier blockscout \
-    --verifier-url 'https://odyssey.storyscan.xyz/api/' 
+    --verifier-url 'https://aeneid.storyscan.xyz/api/' 
+```
+
+- Deploy IPCollection contract
+```shell
+$ forge script script/DeployIPCollection.s.sol:Deploy --broadcast \
+    --chain-id 1315 \
+    --rpc-url https://aeneid.storyrpc.io \
+    --verify \
+    --verifier blockscout \
+    --verifier-url 'https://aeneid.storyscan.xyz/api/' 
 ```
 
 - Deploy TokenFactory contract
 ```shell
 forge script script/DeployTokenFactory.s.sol:Deploy  --broadcast \
-    --chain-id 1516 \
-    --rpc-url https://odyssey.storyrpc.io \
+    --chain-id 1315 \
+    --rpc-url https://aeneid.storyrpc.io \
     --verify \
     --verifier blockscout \
-    --verifier-url 'https://odyssey.storyscan.xyz/api/' 
+    --verifier-url 'https://aeneid.storyscan.xyz/api/' 
 ```
