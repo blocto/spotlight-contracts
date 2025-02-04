@@ -38,7 +38,7 @@ contract Deploy is Script {
         src/{CONTRACT_PATH}.sol:{CONTRACT_NAME}
     */
 
-    address private _STORY_DERIVATIVE_WORKFLOWS_ADDRESS = 0xa8815CEB96857FFb8f5F8ce920b1Ae6D70254C7B;
+    address private _STORY_DERIVATIVE_WORKFLOWS_ADDRESS = 0x9e2d496f72C547C2C535B167e06ED8729B374a4f;
     address private _SPOTLIGHT_TOKEN_FACTORY_OWNER = 0x0FbAd0dd681679112F8D1635d2C07C93dBd294B1;
 
     address private constant PIPERX_V2_ROUTER = 0x8812d810EA7CC4e1c3FB45cef19D6a7ECBf2D85D;
@@ -54,7 +54,7 @@ contract Deploy is Script {
 
         // @dev deploy spotlight bonding curve contract
         SpotlightNativeBondingCurve bondingCurve = new SpotlightNativeBondingCurve(
-            690_000_000, // A=6.9*10^-6
+            690_000_000, // A=6.9*10^-10
             2_878_200_000 // B=2.8782×10^−9
         );
 
