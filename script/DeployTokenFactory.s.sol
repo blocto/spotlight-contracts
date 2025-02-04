@@ -41,8 +41,8 @@ contract Deploy is Script {
     address private _STORY_DERIVATIVE_WORKFLOWS_ADDRESS = 0x9e2d496f72C547C2C535B167e06ED8729B374a4f;
     address private _SPOTLIGHT_TOKEN_FACTORY_OWNER = 0x0FbAd0dd681679112F8D1635d2C07C93dBd294B1;
 
-    address private constant PIPERX_V2_ROUTER = 0x8812d810EA7CC4e1c3FB45cef19D6a7ECBf2D85D;
-    address private constant PIPERX_V2_FACTORY = 0x700722D24f9256Be288f56449E8AB1D27C4a70ca;
+    address private constant PIPERX_V2_ROUTER = 0x674eFAa8C50cBEF923ECe625d3c276B7Bb1c16fB;
+    address private constant PIPERX_V2_FACTORY = 0x6D3e2f58954bf4E1d0C4bA26a85a1b49b2e244C6;
 
     function run() public {
         vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
