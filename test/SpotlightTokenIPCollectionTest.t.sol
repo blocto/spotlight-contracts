@@ -11,7 +11,7 @@ contract SpotlightTokenIPCollectionTest is Test {
     SpotlightTokenIPCollection private _tokenIpCollection;
     address private _tokenIpCollectionAddr;
 
-    string private defaultTokenURI = "ipfs://bafkreibqge4t7rsppnarffvrzlfph5rk5ajvupa4oyk4v2h3ieqccty4ye";
+    string private defaultTokenURI = "ipfs://bafkreifl7ifonbfll7nn423tm5s7lvcw7jc6qgimcc2izef4foo47srt2e";
     string private newTokenURI = "https://example.com/new-token/";
 
     function setUp() public {
