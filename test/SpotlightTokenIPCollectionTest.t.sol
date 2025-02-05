@@ -20,6 +20,7 @@ contract SpotlightTokenIPCollectionTest is Test {
 
         vm.startPrank(_owner);
         _tokenIpCollection = new SpotlightTokenIPCollection(_tokenFactoryAddr);
+        _tokenIpCollection.setDefaultTokenURI(defaultTokenURI);
         vm.stopPrank();
         _tokenIpCollectionAddr = address(_tokenIpCollection);
     }

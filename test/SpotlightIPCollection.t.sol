@@ -30,7 +30,7 @@ contract SpotlightIPCollectionTest is Test {
     function test_constructor() public view {
         assertEq(_spotlightIPCollection.owner(), _ownerAddr);
         assertEq(_spotlightIPCollection.totalSupply(), 0);
-        assertEq(_spotlightIPCollection.isMintEnabled(), false);
+        assertEq(_spotlightIPCollection.isMintEnabled(), true);
         assertEq(_spotlightIPCollection.isTransferEnabled(), false);
         assertEq(_spotlightIPCollection.name(), "Spotlight IP");
         assertEq(_spotlightIPCollection.symbol(), "SPIP");
@@ -53,6 +53,7 @@ contract SpotlightIPCollectionTest is Test {
 
     function test_mintBeforeEnabled() public {
         address receiver = makeAddr("receiver");
+        _disableMin();
         vm.startPrank(receiver);
         vm.expectRevert("SpotlightIPCollection: mint is disabled");
         _spotlightIPCollection.mint();
@@ -69,6 +70,7 @@ contract SpotlightIPCollectionTest is Test {
     }
 
     function test_mintToBeforeEnabled() public {
+        _disableMin();
         address receiver = makeAddr("receiver");
         vm.startPrank(_ownerAddr);
         vm.expectRevert("SpotlightIPCollection: mint is disabled");
