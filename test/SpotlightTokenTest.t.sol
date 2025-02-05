@@ -75,8 +75,7 @@ contract SpotlightTokenTest is Test {
         (
             StoryWorkflowStructs.MakeDerivative memory makeDerivative,
             StoryWorkflowStructs.IPMetadata memory ipMetadata,
-            StoryWorkflowStructs.SignatureData memory sigMetadata,
-            StoryWorkflowStructs.SignatureData memory sigRegister
+            StoryWorkflowStructs.SignatureData memory sigMetadataAndRegister
         ) = _mockStoryWorkflows.getMockStructs();
 
         address predeployedTokenAddress = _factory.calculateTokenAddress(_tokenCreator);
@@ -88,7 +87,7 @@ contract SpotlightTokenTest is Test {
         });
 
         (_tokenAddress,) = _factory.createToken{value: DEFAULT_CREATION_FEE}(
-            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister
+            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadataAndRegister
         );
         _token = SpotlightToken(payable(_tokenAddress));
 
@@ -103,7 +102,7 @@ contract SpotlightTokenTest is Test {
 
         address tokenCreatedWithIPAccount;
         (tokenCreatedWithIPAccount,) = _factory.createToken{value: DEFAULT_CREATION_FEE}(
-            tokenCreationDataWithIPAccount, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister
+            tokenCreationDataWithIPAccount, initialBuyData, makeDerivative, ipMetadata, sigMetadataAndRegister
         );
         _tokenCreatedWithIPAccount = SpotlightToken(payable(tokenCreatedWithIPAccount));
         vm.stopPrank();

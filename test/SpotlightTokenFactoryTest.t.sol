@@ -172,8 +172,7 @@ contract SpotlightTokenFactoryTest is Test {
             ISpotlightTokenFactory.IntialBuyData memory initialBuyData,
             StoryWorkflowStructs.MakeDerivative memory makeDerivative,
             StoryWorkflowStructs.IPMetadata memory ipMetadata,
-            StoryWorkflowStructs.SignatureData memory sigMetadata,
-            StoryWorkflowStructs.SignatureData memory sigRegister,
+            StoryWorkflowStructs.SignatureData memory sigMetadataAndRegister,
             address mockReturnAddress
         ) = _getDummyStructs(tokenCreator, 0);
 
@@ -183,8 +182,7 @@ contract SpotlightTokenFactoryTest is Test {
             tokenCreationData.tokenIpNFTId,
             makeDerivative,
             ipMetadata,
-            sigMetadata,
-            sigRegister
+            sigMetadataAndRegister
         );
 
         vm.expectEmit(false, false, false, true);
@@ -202,7 +200,7 @@ contract SpotlightTokenFactoryTest is Test {
             address(_bondingCurve)
         );
         _factory.createToken{value: tokenCreator.balance}(
-            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister
+            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadataAndRegister
         );
         vm.stopPrank();
 
@@ -233,12 +231,11 @@ contract SpotlightTokenFactoryTest is Test {
             ISpotlightTokenFactory.IntialBuyData memory initialBuyData,
             StoryWorkflowStructs.MakeDerivative memory makeDerivative,
             StoryWorkflowStructs.IPMetadata memory ipMetadata,
-            StoryWorkflowStructs.SignatureData memory sigMetadata,
-            StoryWorkflowStructs.SignatureData memory sigRegister,
+            StoryWorkflowStructs.SignatureData memory sigMetadataAndRegister,
         ) = _getDummyStructs(tokenCreator, 1 ether);
 
         _factory.createToken{value: TOKEN_CREATOR_BALANCE}(
-            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister
+            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadataAndRegister
         );
         vm.stopPrank();
 
@@ -266,13 +263,12 @@ contract SpotlightTokenFactoryTest is Test {
             ISpotlightTokenFactory.IntialBuyData memory initialBuyData,
             StoryWorkflowStructs.MakeDerivative memory makeDerivative,
             StoryWorkflowStructs.IPMetadata memory ipMetadata,
-            StoryWorkflowStructs.SignatureData memory sigMetadata,
-            StoryWorkflowStructs.SignatureData memory sigRegister,
+            StoryWorkflowStructs.SignatureData memory sigMetadataAndRegister,
         ) = _getDummyStructs(tokenCreator, EXCESS_INITIAL_BUY_AMOUNT);
 
         vm.expectRevert("SpotlightTokenFactory: Insufficient total amount");
         _factory.createToken{value: TOKEN_CREATOR_BALANCE}(
-            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadata, sigRegister
+            tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadataAndRegister
         );
         vm.stopPrank();
 
@@ -313,7 +309,6 @@ contract SpotlightTokenFactoryTest is Test {
             StoryWorkflowStructs.MakeDerivative memory,
             StoryWorkflowStructs.IPMetadata memory,
             StoryWorkflowStructs.SignatureData memory,
-            StoryWorkflowStructs.SignatureData memory,
             address
         )
     {
@@ -331,8 +326,7 @@ contract SpotlightTokenFactoryTest is Test {
         (
             StoryWorkflowStructs.MakeDerivative memory makeDerivative,
             StoryWorkflowStructs.IPMetadata memory ipMetadata,
-            StoryWorkflowStructs.SignatureData memory sigMetadata,
-            StoryWorkflowStructs.SignatureData memory sigRegister
+            StoryWorkflowStructs.SignatureData memory sigMetadataAndRegister
         ) = _mockStoryWorkflows.getMockStructs();
 
         address mockReturnAddress = makeAddr("mockReturnAddress");
@@ -344,8 +338,7 @@ contract SpotlightTokenFactoryTest is Test {
             initialBuyData,
             makeDerivative,
             ipMetadata,
-            sigMetadata,
-            sigRegister,
+            sigMetadataAndRegister,
             mockReturnAddress
         );
     }

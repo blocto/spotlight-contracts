@@ -14,16 +14,14 @@ contract MockStoryDerivativeWorkflows is IStoryDerivativeWorkflows, Test {
 
     StoryWorkflowStructs.MakeDerivative public mockMakeDerivative;
     StoryWorkflowStructs.IPMetadata public mockIpMetadata;
-    StoryWorkflowStructs.SignatureData public mockSigMetadata;
-    StoryWorkflowStructs.SignatureData public mockSigRegister;
+    StoryWorkflowStructs.SignatureData public mockSigMetadataAndRegister;
 
     event RegisterCalled(
         address collection,
         uint256 tokenId,
         StoryWorkflowStructs.MakeDerivative derivData,
         StoryWorkflowStructs.IPMetadata ipMetadata,
-        StoryWorkflowStructs.SignatureData sigMetadata,
-        StoryWorkflowStructs.SignatureData sigRegister
+        StoryWorkflowStructs.SignatureData sigMetadataAndRegister
     );
 
     constructor() {
@@ -35,7 +33,10 @@ contract MockStoryDerivativeWorkflows is IStoryDerivativeWorkflows, Test {
             parentIpIds: parentIPAccounts,
             licenseTemplate: address(0),
             licenseTermsIds: new uint256[](0),
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 0,
+            maxRts: 0,
+            maxRevenueShare: 0
         });
 
         mockIpMetadata = StoryWorkflowStructs.IPMetadata({
@@ -45,10 +46,7 @@ contract MockStoryDerivativeWorkflows is IStoryDerivativeWorkflows, Test {
             nftMetadataHash: bytes32(uint256(2))
         });
 
-        mockSigMetadata =
-            StoryWorkflowStructs.SignatureData({signer: address(0), deadline: block.timestamp + 1 days, signature: ""});
-
-        mockSigRegister =
+        mockSigMetadataAndRegister =
             StoryWorkflowStructs.SignatureData({signer: address(0), deadline: block.timestamp + 1 days, signature: ""});
     }
 
@@ -58,11 +56,10 @@ contract MockStoryDerivativeWorkflows is IStoryDerivativeWorkflows, Test {
         returns (
             StoryWorkflowStructs.MakeDerivative memory,
             StoryWorkflowStructs.IPMetadata memory,
-            StoryWorkflowStructs.SignatureData memory,
             StoryWorkflowStructs.SignatureData memory
         )
     {
-        return (mockMakeDerivative, mockIpMetadata, mockSigMetadata, mockSigRegister);
+        return (mockMakeDerivative, mockIpMetadata, mockSigMetadataAndRegister);
     }
 
     function setMockReturnAddress(address _mockAddress) external {
@@ -74,11 +71,10 @@ contract MockStoryDerivativeWorkflows is IStoryDerivativeWorkflows, Test {
         uint256 tokenId,
         StoryWorkflowStructs.MakeDerivative calldata derivData,
         StoryWorkflowStructs.IPMetadata calldata ipMetadata,
-        StoryWorkflowStructs.SignatureData calldata sigMetadata,
-        StoryWorkflowStructs.SignatureData calldata sigRegister
+        StoryWorkflowStructs.SignatureData calldata sigMetadataAndRegister
     ) external returns (address) {
         callCount++;
-        emit RegisterCalled(collection, tokenId, derivData, ipMetadata, sigMetadata, sigRegister);
+        emit RegisterCalled(collection, tokenId, derivData, ipMetadata, sigMetadataAndRegister);
         return mockReturnAddress;
     }
 }

@@ -155,8 +155,7 @@ interface ISpotlightTokenFactory {
      * @param initialBuyData Details for the initial purchase of the token.
      * @param derivData Details for creating a derivative token. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
      * @param ipMetadata Metadata for the intellectual property. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
-     * @param sigMetadata Signature data for token creation. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
-     * @param sigRegister Signature data for IP registration. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
+     * @param sigMetadataAndRegister Signature data for token creation and IP registration. See {IStoryDerivativeWorkflows-registerIpAndMakeDerivative}.
      *
      * @return tokenAddress The address of the newly created token.
      * @return ipId The ID of the newly registered intellectual property.
@@ -166,8 +165,7 @@ interface ISpotlightTokenFactory {
         IntialBuyData memory initialBuyData,
         StoryWorkflowStructs.MakeDerivative calldata derivData,
         StoryWorkflowStructs.IPMetadata calldata ipMetadata,
-        StoryWorkflowStructs.SignatureData calldata sigMetadata,
-        StoryWorkflowStructs.SignatureData calldata sigRegister
+        StoryWorkflowStructs.SignatureData calldata sigMetadataAndRegister
     ) external payable returns (address tokenAddress, address ipId);
 
     /**

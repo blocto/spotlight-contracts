@@ -146,8 +146,7 @@ contract SpotlightTokenFactory is OwnableUpgradeable, SpotlightTokenFactoryStora
         IntialBuyData memory initialBuyData,
         StoryWorkflowStructs.MakeDerivative calldata derivData,
         StoryWorkflowStructs.IPMetadata calldata ipMetadata,
-        StoryWorkflowStructs.SignatureData calldata sigMetadata,
-        StoryWorkflowStructs.SignatureData calldata sigRegister
+        StoryWorkflowStructs.SignatureData calldata sigMetadataAndRegister
     ) external payable needInitialized returns (address tokenAddress, address ipId) {
         require(derivData.parentIpIds.length > 0, "SpotlightTokenFactory: Parent IP ID is required");
         address parentIPAccount = derivData.parentIpIds[0];
@@ -157,7 +156,7 @@ contract SpotlightTokenFactory is OwnableUpgradeable, SpotlightTokenFactoryStora
         ISpotlightTokenIPCollection(_tokenIpCollection).mint(msg.sender, tokenCreationData.tokenIpNFTId);
 
         ipId = IStoryDerivativeWorkflows(_storyDerivativeWorkflows).registerIpAndMakeDerivative(
-            tokenIpCollection(), tokenCreationData.tokenIpNFTId, derivData, ipMetadata, sigMetadata, sigRegister
+            tokenIpCollection(), tokenCreationData.tokenIpNFTId, derivData, ipMetadata, sigMetadataAndRegister
         );
 
         _distributeFeesAndInitialBuy(tokenAddress, initialBuyData);
