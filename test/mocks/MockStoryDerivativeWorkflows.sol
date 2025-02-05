@@ -48,7 +48,6 @@ contract MockStoryDerivativeWorkflows is IStoryDerivativeWorkflows, Test {
 
         mockSigMetadataAndRegister =
             StoryWorkflowStructs.SignatureData({signer: address(0), deadline: block.timestamp + 1 days, signature: ""});
-
     }
 
     function getMockStructs()
@@ -72,7 +71,7 @@ contract MockStoryDerivativeWorkflows is IStoryDerivativeWorkflows, Test {
         uint256 tokenId,
         StoryWorkflowStructs.MakeDerivative calldata derivData,
         StoryWorkflowStructs.IPMetadata calldata ipMetadata,
-         StoryWorkflowStructs.SignatureData calldata sigMetadataAndRegister
+        StoryWorkflowStructs.SignatureData calldata sigMetadataAndRegister
     ) external returns (address) {
         callCount++;
         emit RegisterCalled(collection, tokenId, derivData, ipMetadata, sigMetadataAndRegister);

@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import {StoryWorkflowStructs} from "./StoryWorkflowStructs.sol";
 // refer: https://github.com/storyprotocol/protocol-periphery-v1/blob/426f2b70c209d9f40ec0eafcc016a902d629abdf/contracts/interfaces/workflows/IDerivativeWorkflows.sol#L34
+
 interface IStoryDerivativeWorkflows {
     /// @notice Register the given NFT as a derivative IP with metadata without license tokens.
     /// @param nftContract The address of the NFT collection.
