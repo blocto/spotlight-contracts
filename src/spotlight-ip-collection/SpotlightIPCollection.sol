@@ -9,7 +9,7 @@ contract SpotlightIPCollection is ERC721, Ownable {
     using Strings for uint256;
 
     bool private _isTransferEnabled = false;
-    bool private _isMintEnabled = false;
+    bool private _isMintEnabled = true;
 
     uint256 private _nextTokenId;
     string private _defaultTokenURI;
