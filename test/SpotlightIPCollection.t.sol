@@ -63,10 +63,9 @@ contract SpotlightIPCollectionTest is Test {
     function test_notOwnerMintTo() public {
         address notOwner = makeAddr("notOwner");
         address receiver = makeAddr("receiver");
-        vm.startPrank(notOwner);
         vm.expectRevert();
+        vm.prank(notOwner);
         _mintTo(receiver);
-        vm.stopPrank();
     }
 
     function test_mintToBeforeEnabled() public {
