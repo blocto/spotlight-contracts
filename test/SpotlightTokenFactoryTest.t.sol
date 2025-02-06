@@ -176,15 +176,6 @@ contract SpotlightTokenFactoryTest is Test {
             address mockReturnAddress
         ) = _getDummyStructs(tokenCreator, 0);
 
-        // vm.expectEmit(false, false, false, true);
-        // emit MockStoryDerivativeWorkflows.RegisterCalled(
-        //     address(_factory.tokenIpCollection()),
-        //     tokenCreationData.tokenIpNFTId,
-        //     makeDerivative,
-        //     ipMetadata,
-        //     sigMetadataAndRegister
-        // );
-
         vm.expectEmit(false, false, false, true);
         emit ISpotlightTokenFactory.SpotlightTokenCreated(
             predeployedTokenAddress,
