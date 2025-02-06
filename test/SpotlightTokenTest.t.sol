@@ -17,9 +17,9 @@ import {ISpotlightToken} from "../src/spotlight-token/ISpotlightToken.sol";
 import {SpotlightRewardsVault} from "../src/spotlight-rewards-vault/SpotlightRewardsVault.sol";
 
 contract SpotlightTokenTest is Test {
-    address private constant WRAPPER_IP = 0xe8CabF9d1FFB6CE23cF0a86641849543ec7BD7d5;
-    address private constant PIPERX_V2_ROUTER = 0x8812d810EA7CC4e1c3FB45cef19D6a7ECBf2D85D;
-    address private constant PIPERX_V2_FACTORY = 0x700722D24f9256Be288f56449E8AB1D27C4a70ca;
+    address private constant WRAPPER_IP = 0x1514000000000000000000000000000000000000;
+    address private constant PIPERX_V2_ROUTER = 0x674eFAa8C50cBEF923ECe625d3c276B7Bb1c16fB;
+    address private constant PIPERX_V2_FACTORY = 0x6D3e2f58954bf4E1d0C4bA26a85a1b49b2e244C6;
 
     // @dev following constants are from SpotlightTokenStorage
     uint256 private constant DEFAULT_CREATION_FEE = 0.1 ether;
@@ -133,7 +133,7 @@ contract SpotlightTokenTest is Test {
             _tokenCreator,
             address(_bondingCurve),
             address(_factory),
-            address(0x359EcA9F3C4cCdB7C10Dd4D9410EaD52Ef9B430A),
+            address(0x7D0876367577F59919489856D2f85458a26A243D),
             address(_rewardsVault),
             address(PIPERX_V2_ROUTER),
             address(PIPERX_V2_FACTORY)

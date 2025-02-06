@@ -3,8 +3,10 @@ pragma solidity ^0.8.13;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {IMinimalIPAccount} from "../interfaces/IMinimalIPAccount.sol";
 import {ISpotlightTokenFactory} from "./ISpotlightTokenFactory.sol";
 import {ISpotlightToken} from "../spotlight-token/ISpotlightToken.sol";
@@ -16,6 +18,9 @@ import {ISpotlightBondingCurve} from "../spotlight-bonding-curve/ISpotlightBondi
 import {MarketType} from "../spotlight-token/ISpotlightToken.sol";
 
 contract SpotlightTokenFactory is OwnableUpgradeable, SpotlightTokenFactoryStorage, ISpotlightTokenFactory {
+    // keccak256("spotlight.tokenfactory.createTokenUser")
+    bytes32 private constant CREATE_TOKEN_USER_SLOT = 0x108d1d40688fb62ccf22a4337fd0314dd3ca65e881f77a1d95a3512e641e2e0a;
+
     modifier needInitialized() {
         _checkIsInitialized();
         _;
@@ -146,19 +151,20 @@ contract SpotlightTokenFactory is OwnableUpgradeable, SpotlightTokenFactoryStora
         IntialBuyData memory initialBuyData,
         StoryWorkflowStructs.MakeDerivative calldata derivData,
         StoryWorkflowStructs.IPMetadata calldata ipMetadata,
-        StoryWorkflowStructs.SignatureData calldata sigMetadataAndRegister
+        StoryWorkflowStructs.SignatureData memory sigMetadataAndRegister
     ) external payable needInitialized returns (address tokenAddress, address ipId) {
         require(derivData.parentIpIds.length > 0, "SpotlightTokenFactory: Parent IP ID is required");
         address parentIPAccount = derivData.parentIpIds[0];
         require(_checkIsValidIPAccount(parentIPAccount), "SpotlightTokenFactory: Parent IP Account is not valid");
         tokenAddress = _deploySpotlightToken(tokenCreationData, msg.sender, parentIPAccount);
-
-        ISpotlightTokenIPCollection(_tokenIpCollection).mint(msg.sender, tokenCreationData.tokenIpNFTId);
+        ISpotlightTokenIPCollection(_tokenIpCollection).mint(address(this), tokenCreationData.tokenIpNFTId);
+        setCreateTokenUser(sigMetadataAndRegister.signer);
+        sigMetadataAndRegister.signer = address(this);
 
         ipId = IStoryDerivativeWorkflows(_storyDerivativeWorkflows).registerIpAndMakeDerivative(
             tokenIpCollection(), tokenCreationData.tokenIpNFTId, derivData, ipMetadata, sigMetadataAndRegister
         );
-
+        IERC721(_tokenIpCollection).transferFrom(address(this), msg.sender, tokenCreationData.tokenIpNFTId);
         _distributeFeesAndInitialBuy(tokenAddress, initialBuyData);
         _numbersOfTokensCreated[msg.sender] += 1;
 
@@ -257,5 +263,32 @@ contract SpotlightTokenFactory is OwnableUpgradeable, SpotlightTokenFactoryStora
     function _checkIsValidIPAccount(address ipAccount) internal view returns (bool) {
         (, address tokenContract,) = IMinimalIPAccount(ipAccount).token();
         return tokenContract != address(0);
+    }
+
+    /// @notice Get the create token user from transient storage CREATE_TOKEN_USER_SLOT
+    /// @return user The create token user
+    function getCreateTokenUser() internal view returns (address user) {
+        assembly {
+            user := tload(CREATE_TOKEN_USER_SLOT)
+        }
+    }
+
+    /// @notice Set the create token user in transient storage CREATE_TOKEN_USER_SLOT
+    /// @param user The create token user to set
+    function setCreateTokenUser(address user) internal {
+        assembly {
+            tstore(CREATE_TOKEN_USER_SLOT, user)
+        }
+    }
+
+    /// @notice Should return whether the signature provided is valid for the provided data
+    ///  See https://github.com/ethereum/EIPs/issues/1271
+    /// @param _hash A 32 byte hash of the signed data.
+    /// @param _signature Signature byte array associated with `_data`
+    /// @return Magic value `0x1626ba7e` upon success, 0 otherwise. (IERC1271.isValidSignature.selector))
+    function isValidSignature(bytes32 _hash, bytes calldata _signature) external view returns (bytes4) {
+        return SignatureChecker.isValidSignatureNow(getCreateTokenUser(), _hash, _signature)
+            ? bytes4(0x1626ba7e)
+            : bytes4(0);
     }
 }
