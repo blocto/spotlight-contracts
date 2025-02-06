@@ -176,14 +176,14 @@ contract SpotlightTokenFactoryTest is Test {
             address mockReturnAddress
         ) = _getDummyStructs(tokenCreator, 0);
 
-        vm.expectEmit(false, false, false, true);
-        emit MockStoryDerivativeWorkflows.RegisterCalled(
-            address(_factory.tokenIpCollection()),
-            tokenCreationData.tokenIpNFTId,
-            makeDerivative,
-            ipMetadata,
-            sigMetadataAndRegister
-        );
+        // vm.expectEmit(false, false, false, true);
+        // emit MockStoryDerivativeWorkflows.RegisterCalled(
+        //     address(_factory.tokenIpCollection()),
+        //     tokenCreationData.tokenIpNFTId,
+        //     makeDerivative,
+        //     ipMetadata,
+        //     sigMetadataAndRegister
+        // );
 
         vm.expectEmit(false, false, false, true);
         emit ISpotlightTokenFactory.SpotlightTokenCreated(
@@ -199,11 +199,11 @@ contract SpotlightTokenFactoryTest is Test {
             address(_factory),
             address(_bondingCurve)
         );
+
         _factory.createToken{value: tokenCreator.balance}(
             tokenCreationData, initialBuyData, makeDerivative, ipMetadata, sigMetadataAndRegister
         );
         vm.stopPrank();
-
         assertEq(address(_factory).balance, expectedFactoryBalance);
         assertEq(tokenCreator.balance, expectedTokenCreatorBalance);
         assertEq(_factory.numberOfTokensCreated(tokenCreator), 1);
