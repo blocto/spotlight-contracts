@@ -4,12 +4,13 @@ pragma solidity ^0.8.13;
 import {ISpotlightRewardsVault} from "./ISpotlightRewardsVault.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {IMinimalIPAccount} from "../interfaces/IMinimalIPAccount.sol";
-
 /*
  * @dev Manager of deposits & withdrawals for protocol rewards
  */
-contract SpotlightRewardsVault is ISpotlightRewardsVault, Ownable {
+
+contract SpotlightRewardsVault is ISpotlightRewardsVault, Ownable, ReentrancyGuardTransient {
     constructor() payable Ownable(msg.sender) {}
 
     mapping(address => mapping(uint256 => uint256)) internal _rewards;
@@ -59,7 +60,7 @@ contract SpotlightRewardsVault is ISpotlightRewardsVault, Ownable {
      *
      * @param ipAccount The IPAccount to withdraw rewards from
      */
-    function withdraw(address ipAccount) external onlyWithdrawEnabled {
+    function withdraw(address ipAccount) external onlyWithdrawEnabled nonReentrant {
         if (ipAccount == address(0)) revert AddressZero();
 
         (, address tokenContract, uint256 tokenId) = _getToken(ipAccount);
@@ -81,7 +82,7 @@ contract SpotlightRewardsVault is ISpotlightRewardsVault, Ownable {
      *
      * @param ipAccounts Array of IPAccounts to withdraw rewards from
      */
-    function withdrawAll(address[] calldata ipAccounts) external onlyWithdrawEnabled {
+    function withdrawAll(address[] calldata ipAccounts) external onlyWithdrawEnabled nonReentrant {
         if (ipAccounts.length == 0) revert IPAccountsEmpty();
 
         uint256 totalAmount;
