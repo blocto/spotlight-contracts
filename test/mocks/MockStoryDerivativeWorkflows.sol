@@ -25,7 +25,7 @@ contract MockStoryDerivativeWorkflows is IStoryDerivativeWorkflows, Test {
     );
 
     constructor() {
-        mockParentIPAccount = address(0x7D0876367577F59919489856D2f85458a26A243D);
+        mockParentIPAccount = address(0x9ea65c24f87F6F196B435F65103204A463bcFF17);
         address[] memory parentIPAccounts = new address[](1);
         parentIPAccounts[0] = mockParentIPAccount;
 

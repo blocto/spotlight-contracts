@@ -54,8 +54,8 @@ contract Deploy is Script {
 
         // @dev deploy spotlight bonding curve contract
         SpotlightNativeBondingCurve bondingCurve = new SpotlightNativeBondingCurve(
-            690_000_000, // A=6.9*10^-10
-            2_878_200_000 // B=2.8782×10^−9
+            840_000_000_000, // A=8.4×10^−7
+            3_500_000_000 // B=3.5×10^−9
         );
 
         // @dev deploy spotlight token implementation contract

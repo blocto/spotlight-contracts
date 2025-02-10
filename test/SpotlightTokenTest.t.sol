@@ -26,7 +26,7 @@ contract SpotlightTokenTest is Test {
     uint256 public constant TOTAL_FEE_BPS = 100;
     uint256 public constant BONDING_CURVE_SUPPLY = 800_000_000e18; // 0.8 billion
     uint256 public constant MAX_TOTAL_SUPPLY = 1_000_000_000e18; // 1 billion
-    uint256 public constant GRADUATE_MARKET_AMOUNT = 3 ether;
+    uint256 public constant GRADUATE_MARKET_AMOUNT = 3745 ether;
     uint256 public constant IP_ACCOUNT_FEE_BPS = 1_000; // 10%
 
     SpotlightTokenFactory private _factory;
@@ -50,7 +50,7 @@ contract SpotlightTokenTest is Test {
         vm.startPrank(_factoryOwner);
         _factory = new SpotlightTokenFactory();
         _tokenIpCollection = new SpotlightTokenIPCollection(address(_factory));
-        _bondingCurve = new SpotlightNativeBondingCurve(690_000_000, 2_878_200_000);
+        _bondingCurve = new SpotlightNativeBondingCurve(840_000_000_000, 3_500_000_000);
         _rewardsVault = new SpotlightRewardsVault();
 
         _factory.initialize(
@@ -185,7 +185,7 @@ contract SpotlightTokenTest is Test {
     }
 
     function testBuyWithIPSuccessGraduateMarketInBondingCurvePhase() public {
-        uint256 USER_BUY_AMOUNT = 3 ether;
+        uint256 USER_BUY_AMOUNT = 3745 ether;
         uint256 PROTOCOL_TRADING_FEE = _calculateFee(USER_BUY_AMOUNT, TOTAL_FEE_BPS);
         uint256 expectedIPSpent = _bondingCurve.getTargetTokenBuyQuote(0, BONDING_CURVE_SUPPLY);
         uint256 expectedRefundBuyerReceived = USER_BUY_AMOUNT - PROTOCOL_TRADING_FEE - expectedIPSpent;
@@ -209,7 +209,7 @@ contract SpotlightTokenTest is Test {
         assertTrue(state.marketAddress != address(_token));
 
         // buyer should receive a refund if the market graduates and the user's buy amount exceeds the maximum amount
-        assertApproxEqAbs(_buyer.balance, expectedRefundBuyerReceived, 1e18);
+        assertApproxEqAbs(_buyer.balance, expectedRefundBuyerReceived, 2e18);
     }
 
     function testBuyWithIPSuccessWithDisperseFeeToIPAccountOwner() public {
@@ -518,9 +518,9 @@ contract SpotlightTokenTest is Test {
         assertTrue(state.marketType == MarketType.PIPERX_POOL);
 
         uint256 USER_BUY_TOKEN_AMOUNT = 100_000_000e18;
-        vm.deal(_buyer, 10 ether);
+        vm.deal(_buyer, 10_000 ether);
         vm.startPrank(_buyer);
-        _token.buyToken{value: 10 ether}(USER_BUY_TOKEN_AMOUNT, _buyer, MarketType.PIPERX_POOL);
+        _token.buyToken{value: 10_000 ether}(USER_BUY_TOKEN_AMOUNT, _buyer, MarketType.PIPERX_POOL);
         vm.stopPrank();
         assertEq(_token.balanceOf(_buyer), USER_BUY_TOKEN_AMOUNT);
 
