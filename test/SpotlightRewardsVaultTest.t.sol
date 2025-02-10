@@ -7,10 +7,10 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ISpotlightRewardsVault} from "../src/spotlight-rewards-vault/ISpotlightRewardsVault.sol";
 
 contract SpotlightRewardsVaultTest is Test {
-    address constant IPA_ID = 0x7D0876367577F59919489856D2f85458a26A243D;
-    address constant IPA_TOKEN_CONTRACT = 0x12Da882884b2e541c1511626c20866b62fE6c985;
+    address constant IPA_ID = 0x9ea65c24f87F6F196B435F65103204A463bcFF17;
+    address constant IPA_TOKEN_CONTRACT = 0xFFcCD25f12Bcb322816B099C6A0087cc7De711Bc;
     uint256 constant IPA_TOKEN_ID = 0;
-    address constant IPA_TOKEN_OWNER = 0x1B961DcCa88EAb760e57EC09A90206E3640f53C5;
+    address constant IPA_TOKEN_OWNER = 0x0FbAd0dd681679112F8D1635d2C07C93dBd294B1;
 
     uint256 constant DEFAULT_BALANCE = 1 ether;
     uint256 constant REWARD_AMOUNT = 1 ether;
