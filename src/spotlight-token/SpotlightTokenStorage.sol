@@ -10,7 +10,7 @@ abstract contract SpotlightTokenStorage {
 
     uint256 public constant TOTAL_FEE_BPS = 100; // 1%
     uint256 public constant IP_ACCOUNT_FEE_BPS = 1_000; // 10% to IPAccount, 90% to protocol
-    uint256 public constant LISTING_FEE = 0.1 ether;
+    uint256 public constant LISTING_FEE = 250 ether; // graduate listing fee
 
     uint256 public constant MIN_IP_ORDER_SIZE = 0.0001 ether; // 0.0001 IP
 
