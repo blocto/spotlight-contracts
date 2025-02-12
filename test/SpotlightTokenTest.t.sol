@@ -15,6 +15,7 @@ import {SpotlightNativeBondingCurve} from "../src/spotlight-bonding-curve/Spotli
 import {IUniswapV2Router02} from "../src/interfaces/IUniswapV2Router02.sol";
 import {ISpotlightToken} from "../src/spotlight-token/ISpotlightToken.sol";
 import {SpotlightRewardsVault} from "../src/spotlight-rewards-vault/SpotlightRewardsVault.sol";
+import {IUniswapV2Factory} from "../src/interfaces/IUniswapV2Factory.sol";
 
 contract SpotlightTokenTest is Test {
     address private constant WRAPPER_IP = 0x1514000000000000000000000000000000000000;
@@ -602,5 +603,38 @@ contract SpotlightTokenTest is Test {
 
     function _calculateFee(uint256 amount, uint256 bps) internal pure returns (uint256) {
         return (amount * bps) / 10_000;
+    }
+
+    function testTransferInBondingCurvePhase() public {
+        address userA = makeAddr("userA");
+        address userB = makeAddr("userB");
+        vm.deal(userA, 1 ether);
+        vm.startPrank(userA);
+        _token.buyWithIP{value: 1 ether}(userA, 0, MarketType.BONDING_CURVE);
+        vm.stopPrank();
+
+        // should be able to transfer to userB
+        uint256 userABalanceBefore = _token.balanceOf(userA);
+        vm.prank(userA);
+        _token.transfer(userB, userABalanceBefore);
+        assertEq(_token.balanceOf(userB), userABalanceBefore);
+        assertEq(_token.balanceOf(userA), 0);
+
+        // should revert if transfer to pool
+        vm.startPrank(userB);
+        uint256 balanceOfB = _token.balanceOf(userB);
+        address pool = IUniswapV2Factory(PIPERX_V2_FACTORY).getPair(address(_token), address(WRAPPER_IP));
+        vm.expectRevert(abi.encodeWithSelector(SpotlightToken.ForbiddenToSwapBeforeGraduation.selector));
+        _token.transfer(pool, balanceOfB);
+
+        // should revert if transfer to factory
+        vm.expectRevert(abi.encodeWithSelector(SpotlightToken.ForbiddenToSwapBeforeGraduation.selector));
+        _token.transfer(PIPERX_V2_FACTORY, balanceOfB);
+
+        // should revert if transfer to router
+        vm.expectRevert(abi.encodeWithSelector(SpotlightToken.ForbiddenToSwapBeforeGraduation.selector));
+        _token.transfer(PIPERX_V2_ROUTER, balanceOfB);
+
+        vm.stopPrank();
     }
 }
