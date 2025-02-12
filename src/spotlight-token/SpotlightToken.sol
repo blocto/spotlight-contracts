@@ -476,15 +476,19 @@ contract SpotlightToken is ERC20Upgradeable, ReentrancyGuardTransient, Spotlight
         emit SpotlightTokenGraduated(address(this), _pairAddress, amountETH, amountToken, liquidity, _marketType);
     }
 
+    function _isTargetSwap(address to) internal view returns (bool) {
+        return to == _piperXFactory || to == _piperXRouter;
+    }
+
     function transferFrom(address from, address to, uint256 value) public override returns (bool) {
-        if (_marketType == MarketType.BONDING_CURVE) {
+        if (_marketType == MarketType.BONDING_CURVE && _isTargetSwap(to)) {
             revert ForbiddenTransferBeforeGraduation();
         }
         return super.transferFrom(from, to, value);
     }
 
     function transfer(address to, uint256 value) public override returns (bool) {
-        if (_marketType == MarketType.BONDING_CURVE) {
+        if (_marketType == MarketType.BONDING_CURVE && _isTargetSwap(to)) {
             revert ForbiddenTransferBeforeGraduation();
         }
         return super.transfer(to, value);
