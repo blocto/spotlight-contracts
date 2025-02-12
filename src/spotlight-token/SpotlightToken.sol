@@ -28,6 +28,7 @@ contract SpotlightToken is ERC20Upgradeable, ReentrancyGuardTransient, Spotlight
     error InsufficientLiquidity();
     error AddressZero();
     error IPAmountTooSmall();
+    error ForbiddenToSwapBeforeGraduation();
 
     /*
      * @dev See {ISpotlightToken-initialize}.
@@ -473,5 +474,25 @@ contract SpotlightToken is ERC20Upgradeable, ReentrancyGuardTransient, Spotlight
             IUniswapV2Factory(_piperXFactory).getPair(address(this), IUniswapV2Router02(_piperXRouter).WETH());
 
         emit SpotlightTokenGraduated(address(this), _pairAddress, amountETH, amountToken, liquidity, _marketType);
+    }
+
+    function _isTargetSwap(address to) internal view returns (bool) {
+        address pool =
+            IUniswapV2Factory(_piperXFactory).getPair(address(this), IUniswapV2Router02(_piperXRouter).WETH());
+        return to == pool || to == _piperXFactory || to == _piperXRouter;
+    }
+
+    function transferFrom(address from, address to, uint256 value) public override returns (bool) {
+        if (_marketType == MarketType.BONDING_CURVE && _isTargetSwap(to)) {
+            revert ForbiddenToSwapBeforeGraduation();
+        }
+        return super.transferFrom(from, to, value);
+    }
+
+    function transfer(address to, uint256 value) public override returns (bool) {
+        if (_marketType == MarketType.BONDING_CURVE && _isTargetSwap(to)) {
+            revert ForbiddenToSwapBeforeGraduation();
+        }
+        return super.transfer(to, value);
     }
 }
