@@ -6,7 +6,7 @@ import {SpotlightTokenFactory} from "../src/spotlight-token-factory/SpotlightTok
 import {SpotlightToken} from "../src/spotlight-token/SpotlightToken.sol";
 
 contract SetNewTokenImplementationScript is Script {
-    address private constant currentTokenFactoryProxyAddress = 0x33e5779E8526200A107B8C4B5893E0875c0F15A6;
+    address private constant currentTokenFactoryProxyAddress = 0xBc74Ef58EeB9644168E953cD426998E660C323A4;
 
     function run() public {
         vm.startBroadcast();

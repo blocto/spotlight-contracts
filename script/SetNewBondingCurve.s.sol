@@ -7,14 +7,14 @@ import {SpotlightToken} from "../src/spotlight-token/SpotlightToken.sol";
 import {SpotlightNativeBondingCurve} from "../src/spotlight-bonding-curve/SpotlightNativeBondingCurve.sol";
 
 contract SetNewBondingCurveScript is Script {
-    address private constant currentTokenFactoryProxyAddress = 0x33e5779E8526200A107B8C4B5893E0875c0F15A6;
+    address private constant currentTokenFactoryProxyAddress = 0xBc74Ef58EeB9644168E953cD426998E660C323A4;
 
     function run() public {
         vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
 
         // @dev deploy spotlight bonding curve contract
         SpotlightNativeBondingCurve bondingCurve = new SpotlightNativeBondingCurve(
-            2_100_000_000_000, // A = 2.1×10^−6
+            700_000_000_000, // A = 7×10^−7
             3_500_000_000 // B = 3.5×10^−9
         );
 
